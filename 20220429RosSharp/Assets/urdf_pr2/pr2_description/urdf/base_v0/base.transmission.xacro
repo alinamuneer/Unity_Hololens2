@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--  Caster wheel transmission   -->
+  <xacro:macro name="pr2_wheel_transmission_v0" params="suffix parent reflect">
+    <transmission  name="${parent}_${suffix}_wheel_trans">
+      <type>pr2_mechanism_model/SimpleTransmission</type>
+      <actuator name="${parent}_${suffix}_wheel_motor">
+        <mechanicalReduction>${reflect * 624/35 * 80/18}</mechanicalReduction>
+      </actuator>
+      <joint name="${parent}_${suffix}_wheel_joint">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+    </transmission>
+  </xacro:macro>
+
+  <!-- Hub transmission only -->
+  <xacro:macro name="pr2_caster_transmission_v0" params="suffix">
+    <transmission name="${suffix}_rotation_trans">
+      <type>pr2_mechanism_model/SimpleTransmission</type>
+      <actuator name="${suffix}_rotation_motor">
+        <mechanicalReduction>${-1 * 624/35 * 80/18}</mechanicalReduction>
+      </actuator>
+      <joint name="${suffix}_rotation_joint">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+    </transmission>
+  </xacro:macro>
+</robot>

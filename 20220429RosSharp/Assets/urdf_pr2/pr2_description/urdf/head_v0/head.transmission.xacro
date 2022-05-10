@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+
+  <xacro:macro name="pr2_head_pan_transmission_v0" params="name">
+
+    <transmission name="${name}_trans">
+      <type>pr2_mechanism_model/SimpleTransmission</type>
+      <actuator name="${name}_motor">
+        <mechanicalReduction>6.0</mechanicalReduction>
+      </actuator>
+      <joint name="${name}_joint">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+    </transmission>
+
+  </xacro:macro>
+
+
+
+  <xacro:macro name="pr2_head_tilt_transmission_v0" params="name">
+
+    <transmission name="${name}_trans">
+      <type>pr2_mechanism_model/SimpleTransmission</type>
+      <actuator name="${name}_motor">
+        <mechanicalReduction>6.0</mechanicalReduction>
+      </actuator>
+      <joint name="${name}_joint">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+    </transmission>
+
+  </xacro:macro>
+
+
+
+
+</robot>
