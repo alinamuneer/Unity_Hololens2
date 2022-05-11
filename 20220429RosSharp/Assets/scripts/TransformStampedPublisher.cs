@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.XR;
-using RosSharp.RosBridgeClient.MessageTypes.Geometry;
+
 
 
 
@@ -11,7 +11,7 @@ namespace RosSharp.RosBridgeClient
     {
         public Transform PublishedTransform;
         public string child_frame_id;
-        public Header header;
+        
 
 
         private MessageTypes.Geometry.TransformStamped message;
@@ -31,15 +31,20 @@ namespace RosSharp.RosBridgeClient
 
         private void InitializeMessage()
         {
-            message = new MessageTypes.Geometry.TransformStamped;
+            message = new MessageTypes.Geometry.TransformStamped
+            {
+                header = new MessageTypes.Std.Header()
+                {
+                    frame_id = child_frame_id
+                }
+            };
         }
 
 
         private void UpdateMessage()
         {
             message.header.Update();
-            message.child_frame_id.Update();
-            GetGeometryVector3(PublishedTransform.translation.Unity2Ros(), message.transform.translation);
+            GetGeometryVector3(PublishedTransform.position.Unity2Ros(), message.transform.translation);
             GetGeometryQuaternion(PublishedTransform.rotation.Unity2Ros(), message.transform.rotation);
 
             Publish(message);
