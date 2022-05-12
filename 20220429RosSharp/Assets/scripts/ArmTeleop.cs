@@ -83,14 +83,14 @@ namespace RosSharp.RosBridgeClient
 
             goalBall.GetComponent<MeshRenderer>().material = green;
             enabledTeleop = true;
-            TSPublisher.Publish = true;
+            TSPublisher.publish = true;
         }
 
         public void StopTeleop()
         {
             goalBall.GetComponent<MeshRenderer>().material = red;
             enabledTeleop = false;
-            TSPublisher.Publish = false;
+            TSPublisher.publish = false;
         }
 
         // assuming qArray.Length > 1
