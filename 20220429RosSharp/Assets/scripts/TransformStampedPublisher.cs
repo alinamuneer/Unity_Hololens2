@@ -40,7 +40,6 @@ namespace RosSharp.RosBridgeClient
             };
         }
 
-
         private void UpdateMessage()
         {
             message.header.Update();
