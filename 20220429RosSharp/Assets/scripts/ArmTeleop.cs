@@ -65,7 +65,7 @@ namespace RosSharp.RosBridgeClient
 
         }
 
-        protected void SetJogGoal()
+        protected void SetGoal()
         {
             if (!enabledTeleop)
                 return;
