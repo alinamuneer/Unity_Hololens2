@@ -25,9 +25,9 @@ namespace RosSharp.RosBridgeClient
             base.Start();
             // Init Jog Frame Publisher
             TSPublisher = gameObject.AddComponent<TransformStampedPublisher>();
-            TSPublisher.Topic = "/left/transform_stamp";
+            TSPublisher.Topic = "/left/goal_transform_stamp";
             TSPublisher.parent_frame_ID = "base_link";
-            TSPublisher.child_frame_ID = "left_arm";
+            TSPublisher.child_frame_ID = "l_gripper_tool_frame";
             TSPublisher.PublishedTransform.SetParent(GameObject.Find("base_link").transform);
 
             currentEndEffectorTransform = GameObject.Find("l_gripper_palm_link/l_gripper_tool_frame");
@@ -36,8 +36,8 @@ namespace RosSharp.RosBridgeClient
             averageFinalRotation = new List<Quaternion>();
 
             // Vizualisation stuff
-            gripperViz = GameObject.Find("gripper_viz");
-            gripperVizGoal = GameObject.Find("gripper_viz_goal");
+           // gripperViz = GameObject.Find("gripper_viz");
+            //gripperVizGoal = GameObject.Find("gripper_viz_goal");
             goalBall = GameObject.Find("GoalPoseLaBall");
         }
 
@@ -61,7 +61,7 @@ namespace RosSharp.RosBridgeClient
                 SetGoal();
 
                 // Update Gripper vizualisation on hand
-                UpdateGripperPose();
+               // UpdateGripperPose();
 
                 // visualize gripper at goal position
                 UpdateGoalPose();
@@ -122,17 +122,17 @@ namespace RosSharp.RosBridgeClient
             handTransform.transform.SetPositionAndRotation(averagedCenter, averageRotation);
         }
 
-        protected override void UpdateGripperPose()
-        {
-            TransformParentWithChild(gripperViz.transform, gripperViz.transform.Find("l_gripper_tool_frame"), handTransform.transform.position, handTransform.transform.rotation);
-        }
+        //protected override void UpdateGripperPose()
+        //{
+         //   TransformParentWithChild(gripperViz.transform, gripperViz.transform.Find("l_gripper_tool_frame"), handTransform.transform.position, handTransform.transform.rotation);
+        //}
 
         protected override void UpdateGoalPose()
         {
             goalBall.transform.SetPositionAndRotation(goalTransform.transform.position, goalTransform.transform.rotation);
 
             // Positioning and rotating goal gripper
-            TransformParentWithChild(gripperVizGoal.transform, gripperVizGoal.transform.Find("l_gripper_tool_frame"), goalTransform.transform.position, goalTransform.transform.rotation);
+            //TransformParentWithChild(gripperVizGoal.transform, gripperVizGoal.transform.Find("l_gripper_tool_frame"), goalTransform.transform.position, goalTransform.transform.rotation);
         }
     }
 }
