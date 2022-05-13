@@ -13,17 +13,17 @@ namespace RosSharp.RosBridgeClient
             base.Start();
             // Init Jog Frame Publisher
             TSPublisher = gameObject.AddComponent<TransformStampedPublisher>();
-            TSPublisher.Topic = "/right/transform_stamp";
+            TSPublisher.Topic = "/right/goal_wrist_transform_stamp";
             TSPublisher.parent_frame_ID = "base_link";
-            TSPublisher.child_frame_ID = "right_arm";
+            TSPublisher.child_frame_ID = "rh_palm";
             TSPublisher.PublishedTransform.SetParent(GameObject.Find("base_link").transform);
 
             currentEndEffectorTransform = GameObject.Find("rh_wrist/rh_palm");
 
 
             // Vizualisation stuff
-            gripperViz = GameObject.Find("rh_viz");
-            gripperVizGoal = GameObject.Find("rh_viz_goal");
+            //gripperViz = GameObject.Find("rh_viz");
+            //gripperVizGoal = GameObject.Find("rh_viz_goal");
             goalBall = GameObject.Find("GoalPoseRaBall");
         }
 
@@ -37,11 +37,11 @@ namespace RosSharp.RosBridgeClient
                 // Update goal transform
                 UpdateGoalTransform();
 
-                // set Jog position and visualize mirrored gripper
+                // set position and visualize mirrored gripper
                 SetGoal();
 
                 // Update visualization on hand
-                UpdateGripperPose();
+                //UpdateGripperPose();
 
                 // visualize gripper at goal position
                 UpdateGoalPose();
@@ -54,17 +54,17 @@ namespace RosSharp.RosBridgeClient
             handTransform.transform.Rotate(0, -90, -90);
         }
 
-        protected override void UpdateGripperPose()
-        {
-            gripperViz.transform.SetPositionAndRotation(handTransform.transform.position, handTransform.transform.rotation);
-        }
+        //protected override void UpdateGripperPose()
+        //{
+        //    gripperViz.transform.SetPositionAndRotation(handTransform.transform.position, handTransform.transform.rotation);
+        //}
 
 
         protected override void UpdateGoalPose()
         {
             goalBall.transform.SetPositionAndRotation(TSPublisher.PublishedTransform.position, TSPublisher.PublishedTransform.rotation);
 
-            gripperVizGoal.transform.SetPositionAndRotation(TSPublisher.PublishedTransform.position, TSPublisher.PublishedTransform.rotation);
+            //gripperVizGoal.transform.SetPositionAndRotation(TSPublisher.PublishedTransform.position, TSPublisher.PublishedTransform.rotation);
         }
     }
 }

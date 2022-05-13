@@ -16,10 +16,10 @@ namespace RosSharp.RosBridgeClient
         protected GameObject currentEndEffectorTransform;
 
         // Visualization on Hand
-        protected GameObject gripperViz;
+        //protected GameObject gripperViz;
 
         // Goal Gripper visualization
-        protected GameObject gripperVizGoal;
+        //protected GameObject gripperVizGoal;
         protected GameObject goalBall;
 
         // Hand detection stuff
@@ -46,7 +46,7 @@ namespace RosSharp.RosBridgeClient
 
         protected abstract void UpdateHandTransform();
 
-        protected abstract void UpdateGripperPose();
+        //protected abstract void UpdateGripperPose();
 
         protected abstract void UpdateGoalPose();
 
