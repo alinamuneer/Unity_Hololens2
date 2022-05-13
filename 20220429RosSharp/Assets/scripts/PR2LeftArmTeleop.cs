@@ -58,7 +58,7 @@ namespace RosSharp.RosBridgeClient
                 UpdateGoalTransform();
 
                 // set Jog position and visualize mirrored gripper
-                SetJogGoal();
+                SetGoal();
 
                 // Update Gripper vizualisation on hand
                 UpdateGripperPose();
