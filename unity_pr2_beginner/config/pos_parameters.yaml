@@ -1,0 +1,49 @@
+# Parameters for the controller
+
+
+# max_shoulder_pan_velocity: 2.1
+# max_shoulder_lift_velocity: 2.1
+# max_upper_arm_roll_velocity: 3.27
+# max_elbow_flex_velocity: 3.3
+# max_forearm_roll_velocity: 3.6
+# max_wrist_flex_velocity: 3.1
+# max_wrist_roll_velocity: 3.6
+
+# Control frequency
+right_arm_frequency: 20
+left_arm_frequency: 30
+
+# left arm velocity factor
+left_feedback_velocity_factor: 0.1
+left_feedforward_velocity_factor: 1
+
+# right arm velocity factor
+right_feedback_velocity_factor: 0.0
+right_feedforward_velocity_factor: 1.0
+
+# Maximum joint-space acceleration, just for safety.
+max_joint_acceleration: 3.0
+
+# Maximum cartesian end-effector velocity
+max_position_acceleration: 2.0
+max_position_velocity: 0.5
+max_rotation_velocity: 3.0
+
+#right shoulder
+# [-0.48294219429 0.231886850544 -1.3423842427 -0.651293191378 -0.223962406114 0.0 0.0]
+start_rotation_q: # upward
+#  x: 0.479955028542
+#  y: 0.543532343492
+#  z: 0.465309169488
+#  w: 0.507644697545
+   x: 0.211
+   y: 0.639
+   z: 0.684
+   w: 0.283
+start_position: # upward
+#  x: 0.648742530223
+#  y: -0.545636116475
+#  z: 1.0243681187
+   x: 0.587
+   y: -0.167
+   z: 1.009
