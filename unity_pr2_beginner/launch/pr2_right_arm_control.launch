@@ -1,0 +1,10 @@
+<launch>
+    <node name="pr2_right_arm_control" pkg="unity_pr2_beginner" type="pr2_right_arm_control" output="screen">
+    <!-- <node name="pn_teleop_pr2_single_arm_node" pkg="perception_neuron_tf_broadcaster" type="pn_teleop_pr2_single_arm_node" output="screen"> -->
+      <rosparam command="load" file="$(find unity_pr2_beginner)/config/pos_parameters.yaml" />
+      <param name="publish_pos" type="bool" value="false" />
+      <param name="publish_wrist" type="bool" value="false" />
+    </node>
+
+  <!-- <node name="shadow_hand_teleop" pkg="perception_neuron_tf_broadcaster" type="demo_robot_unsafe.py" output="screen"/>-->
+</launch>
