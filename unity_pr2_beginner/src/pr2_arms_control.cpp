@@ -90,7 +90,7 @@ double clip(double x, double maxv = 0, double minv = 0) {
 int main(int argc, char **argv) {
     signal(SIGINT, STOP_VEL_CONTROLLER);
     // Init ROS
-    ros::init(argc, argv, "pr2_left_arm_control", 1); // 1=no NoSigintHandler
+    ros::init(argc, argv, "pr2_arms_control", 1); // 1=no NoSigintHandler
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
                                    ros::console::levels::Debug);
     ros::NodeHandle node_handle("~");

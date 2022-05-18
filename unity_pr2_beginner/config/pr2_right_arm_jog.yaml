@@ -1,0 +1,40 @@
+jog_joint_node:
+  joint_names:
+    - r_shoulder_pan_joint
+    - r_shoulder_lift_joint
+    - r_upper_arm_roll_joint
+    - r_elbow_flex_joint
+    - r_forearm_roll_joint
+    - rh_WRJ2
+    - rh_WRJ1
+
+jog_frame_node:
+  base_frame: base_link
+  group_names:
+    - right_arm_and_hand
+  link_names:
+    - rh_palm
+
+move_group:
+  controller_list:
+    - name: r_arm_controller
+      action_ns: follow_joint_trajectory
+      type: FollowJointTrajectory
+      joints:
+        - r_shoulder_pan_joint
+        - r_shoulder_lift_joint
+        - r_upper_arm_roll_joint
+        - r_elbow_flex_joint
+        - r_forearm_roll_joint
+    - name: hand/rh_wrist_trajectory_controller
+      action_ns: follow_joint_trajectory
+      type: FollowJointTrajectory
+      joints:
+        - rh_WRJ2
+        - rh_WRJ1
+    - name: rh_wrist_trajectory_controller
+      action_ns: follow_joint_trajectory
+      type: FollowJointTrajectory
+      joints:
+        - rh_WRJ2
+        - rh_WRJ1

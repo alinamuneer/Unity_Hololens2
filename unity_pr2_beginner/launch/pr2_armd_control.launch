@@ -1,0 +1,41 @@
+<launch>
+    <node name="pr2_right_arm_control" pkg="unity_pr2_beginner" type="pr2_right_arm_control" output="screen">
+    <!-- <node name="pn_teleop_pr2_single_arm_node" pkg="perception_neuron_tf_broadcaster" type="pn_teleop_pr2_single_arm_node" output="screen"> -->
+      <rosparam command="load" file="$(find unity_pr2_beginner)/config/pos_parameters.yaml" />
+      <param name="publish_pos" type="bool" value="false" />
+      <param name="publish_wrist" type="bool" value="false" />
+    </node>
+
+  <!-- <node name="shadow_hand_teleop" pkg="perception_neuron_tf_broadcaster" type="demo_robot_unsafe.py" output="screen"/>-->
+
+
+
+<launch>
+  <arg name="use_fake_joint" default="false"/>
+  <arg name="use_moveit" default="false"/>
+  <arg name="use_rviz" default="false"/>
+  <arg name="use_joy" default="false"/>
+  <arg name="use_action" default="false"/>
+  <arg name="intermittent" default="false"/>
+  <arg name="absolute" default="true"/>
+
+  <group ns="left">
+    <rosparam command="load" file="$(find jog_launch)/config/pr2_left_arm_jog.yaml"/>
+    <node name="jog_frame_node_abs" pkg="jog_controller" type="jog_frame_node_abs"
+    if="$(eval absolute == true)" output="screen">
+      <param name="use_action" value="$(arg use_action)"/>
+      <param name="intermittent" value="$(arg intermittent)"/>
+    </node>
+  </group>
+
+  <group ns="right">
+    <rosparam command="load" file="$(find jog_launch)/config/pr2_right_arm_jog.yaml"/>
+    <node name="jog_frame_node_abs" pkg="jog_controller" type="jog_frame_node_abs"
+    if="$(eval absolute == true)" output="screen">
+      <param name="use_action" value="$(arg use_action)"/>
+      <param name="intermittent" value="$(arg intermittent)"/>
+    </node>
+  </group>
+
+</launch>
+</launch>
