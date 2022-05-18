@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     V(node_handle.getParam("start_rotation_q/z", (double &) start_rotation_q.z()));
     V(node_handle.getParam("start_rotation_q/w", (double &) start_rotation_q.w()));
 
-    std::string group_name = "right_arm_and_hand";
+    std::string group_name = "right_arm";
     // Init MoveIt stuff
     moveit::planning_interface::MoveGroupInterface move_group(group_name);
     move_group.setMaxAccelerationScalingFactor(0.3);
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
     ros::Duration(2.0).sleep();
     auto scene = std::make_shared<planning_scene::PlanningScene>(robot_model);
     auto joint_model_group = robot_model->getJointModelGroup(group_name);
-    auto arm_joint_model_group = robot_model->getJointModelGroup("right_arm");
+    auto arm_joint_model_group = robot_model->getJointModelGroup("right_arm_pr2");
 
     std::string base_frame = robot_model->getModelFrame();  // base_footprint
     ROS_INFO("Reference frame: %s", base_frame.c_str());
@@ -315,7 +315,6 @@ int main(int argc, char **argv) {
         {
           std::lock_guard <std::mutex> lock_pedal(enable_mutex);
           enable_PR2 = PR2_enable_msg;
-          ROS_WARN_STREAM("enable_PR2 is " << enable_PR2);
         }
         if (enable_PR2==2)
         // ik calculation
