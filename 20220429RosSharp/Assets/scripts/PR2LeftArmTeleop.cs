@@ -50,6 +50,10 @@ namespace RosSharp.RosBridgeClient
                 HandJointUtils.TryGetJointPose(TrackedHandJoint.IndexMetacarpal, recordingHand, out indexMetacarpal) &&
                 HandJointUtils.TryGetJointPose(TrackedHandJoint.ThumbMetacarpalJoint, recordingHand, out thumbMetacarpal))
             {
+                if (!enabledTeleop)
+                    return;
+                else
+                    TSPublisher.publish = true;
 
                 // Update hand transform
                 UpdateHandTransform();
@@ -66,6 +70,8 @@ namespace RosSharp.RosBridgeClient
                 // visualize gripper at goal position
                 UpdateGoalPose();
             }
+            else
+            { TSPublisher.publish = false; }
         }
 
         protected override void UpdateHandTransform()
