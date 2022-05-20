@@ -330,8 +330,6 @@ int main(int argc, char **argv) {
             ik_options.goals.emplace_back(
                    new bio_ik::OrientationGoal("rh_palm", QuaterniontoTF(goal_rotation_q)));
 
-            printVector("goal position", goal_position);
-
             // ik_options.goals.emplace_back(new bio_ik::SideGoal(
             //         "r_shoulder_pan_link", tf2::Vector3(1, 0, 0), tf2::Vector3(0, 1, 0)));
             // ik_options.goals.emplace_back(

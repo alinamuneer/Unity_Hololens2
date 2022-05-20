@@ -1,3 +1,33 @@
+# Maximum joint-space acceleration, just for safety.
+max_joint_acceleration: 3.0
+
+# Maximum cartesian end-effector velocity
+max_position_acceleration: 2.0
+max_position_velocity: 0.5
+max_rotation_velocity: 3.0
+
+
+# Control frequency
+arm_frequency: 20
+
+# right arm velocity factor
+feedback_velocity_factor: 0.0
+feedforward_velocity_factor: 1.0
+
+start_rotation_q:
+   x: 0.211
+   y: 0.639
+   z: 0.684
+   w: 0.283
+start_position:
+   x: 0.587
+   y: -0.167
+   z: 1.009
+
+group_names: right_arm
+
+
+
 jog_joint_node:
   joint_names:
     - r_shoulder_pan_joint
@@ -11,7 +41,7 @@ jog_joint_node:
 jog_frame_node:
   base_frame: base_link
   group_names:
-    - right_arm_and_hand
+    - right_arm
   link_names:
     - rh_palm
 

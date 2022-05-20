@@ -120,15 +120,15 @@ int main(int argc, char **argv) {
 
     // Control frequency
     int frequency = 0;
-    V(node_handle.getParam("right_arm_frequency", frequency));
+    V(node_handle.getParam("arm_frequency", frequency));
     V(frequency > 0);
     double max_rotation_angle = max_rotation_velocity / frequency;
 
-    double right_velocity_fd_factor;
-    double right_velocity_ff_factor;
+    double velocity_fd_factor;
+    double velocity_ff_factor;
     // Maximum joint-space velocity, just for safety. You should mainly rely on
-    V(node_handle.getParam("right_feedforward_velocity_factor", right_velocity_ff_factor));
-    V(node_handle.getParam("right_feedback_velocity_factor", right_velocity_fd_factor));
+    V(node_handle.getParam("feedforward_velocity_factor", velocity_ff_factor));
+    V(node_handle.getParam("feedback_velocity_factor", velocity_fd_factor));
 
     bool publish_pos;
     bool publish_wrist;
@@ -146,7 +146,10 @@ int main(int argc, char **argv) {
     V(node_handle.getParam("start_rotation_q/z", (double &) start_rotation_q.z()));
     V(node_handle.getParam("start_rotation_q/w", (double &) start_rotation_q.w()));
 
-    std::string group_name = "right_arm_and_hand";
+
+    std::string group_name;
+    V(node_handle.getParam("group_name", group_name));
+
     // Init MoveIt stuff
     moveit::planning_interface::MoveGroupInterface move_group(group_name);
     move_group.setMaxAccelerationScalingFactor(0.3);
@@ -155,10 +158,9 @@ int main(int argc, char **argv) {
     ros::Duration(2.0).sleep();
     auto scene = std::make_shared<planning_scene::PlanningScene>(robot_model);
     auto joint_model_group = robot_model->getJointModelGroup(group_name);
-    auto arm_joint_model_group = robot_model->getJointModelGroup("right_arm");
 
     std::string base_frame = robot_model->getModelFrame();  // base_footprint
-    ROS_INFO("Reference frame: %s", base_frame.c_str());
+    //ROS_INFO("Reference frame: %s", base_frame.c_str());
 
     moveit::core::RobotState goal_state(robot_model);
     goal_state.setToDefaultValues();
@@ -183,11 +185,6 @@ int main(int argc, char **argv) {
     const geometry_msgs::TransformStamped &)>(
              [&](const geometry_msgs::TransformStamped &data) {
                 std::lock_guard <std::mutex> lock(hand_transform_mutex);
-                  if (data.transform.translation.x == 2.5 && data.transform.translation.y == 0.0)
-                  {
-                    ROS_ERROR_STREAM("skip the fixed wrist date when the wrist is disappeared");
-                  }
-                  else{
                     hololens_right_wrist_unity_pos.x() = data.transform.translation.x;
                     hololens_right_wrist_unity_pos.y() = data.transform.translation.y;
                     hololens_right_wrist_unity_pos.z() = data.transform.translation.z;
@@ -195,7 +192,6 @@ int main(int argc, char **argv) {
                     hololens_right_wrist_unity_rot.y() = data.transform.rotation.y;
                     hololens_right_wrist_unity_rot.z() = data.transform.rotation.z;
                     hololens_right_wrist_unity_rot.w() = data.transform.rotation.w;
-                  }
             }));
 
       // callback: get right pedal data
@@ -399,8 +395,8 @@ int main(int argc, char **argv) {
 //                                //ROS_INFO_STREAM("goal_joint_values " <<goal_joint_values[j] << " previous_goal_joint_values " << previous_goal_joint_values[j] );
 //                                double joint_feedforward_diff = goal_joint_values[j] - previous_goal_joint_values[j];
 //                                double joint_feedback_diff = goal_joint_values[j] - current_joint_values[j];
-//                                double vel = joint_feedforward_diff * frequency * right_velocity_ff_factor
-//                                             + joint_feedback_diff * right_velocity_fd_factor;
+//                                double vel = joint_feedforward_diff * frequency * velocity_ff_factor
+//                                             + joint_feedback_diff * velocity_fd_factor;
 //
 //                                //ROS_INFO_STREAM("vel is "<< vel);
 //                                if (M_PI < vel)
@@ -441,7 +437,7 @@ int main(int argc, char **argv) {
                     if (publish_pos)
                     {
                         trajectory_msgs::JointTrajectory arm_joint_trajectory;
-                        arm_joint_trajectory.joint_names = arm_joint_model_group->getVariableNames();
+                        arm_joint_trajectory.joint_names = joint_model_group->getVariableNames()[:-2];
                         arm_joint_trajectory.points.emplace_back();
                         for (int j=0; j <5; j++) {
                             arm_joint_trajectory.points.back().positions.emplace_back(

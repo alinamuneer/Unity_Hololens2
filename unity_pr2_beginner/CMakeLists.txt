@@ -32,3 +32,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 add_executable(pr2_right_arm_control src/pr2_right_arm_control.cpp)
 add_dependencies(pr2_right_arm_control ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pr2_right_arm_control ${catkin_LIBRARIES} ccd)
+
+add_executable(pr2_arms_control src/pr2_arms_control.cpp)
+add_dependencies(pr2_arms_control ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pr2_arms_control ${catkin_LIBRARIES} ccd)
