@@ -10,21 +10,25 @@ max_rotation_velocity: 3.0
 arm_frequency: 30
 
 # left arm velocity factor
-left_feedback_velocity_factor: 0.1
-left_feedforward_velocity_factor: 1
+feedback_velocity_factor: 0.1
+feedforward_velocity_factor: 1
 
 start_rotation_q:
-   x: 0.211
-   y: 0.639
-   z: 0.684
-   w: 0.283
+   x: -0.957
+   y: 0.234
+   z: -0.166
+   w: 0.0414
 start_position:
-   x: 0.587
-   y: -0.167
-   z: 1.009
-   
-jog_joint_node:
-  joint_names:
+   x: 0.492
+   y: 0.475
+   z: 0.941
+start_joints: [1.320677555902451,0.728430591131164, 0.9522966916474169, -1.801631489637284, 1.202594159483151, -0.54644481189654, 1.0]
+
+group_name: left_arm
+
+eef_link: l_gripper_tool_frame
+
+joint_names:
     - l_shoulder_pan_joint
     - l_shoulder_lift_joint
     - l_upper_arm_roll_joint
@@ -33,24 +37,10 @@ jog_joint_node:
     - l_wrist_flex_joint
     - l_wrist_roll_joint
 
+teleop_signal:
+  start: 1
+  stop: 3
 
-jog_frame_node:
-  base_frame: base_link
-  group_names:
-    - left_arm
-  link_names:
-    - l_gripper_tool_frame
+arm_controller_name: l_arm_controller
 
-move_group:
-  controller_list:
-    - name: l_arm_controller
-      action_ns: follow_joint_trajectory
-      type: FollowJointTrajectory
-      joints:
-        - l_shoulder_pan_joint
-        - l_shoulder_lift_joint
-        - l_upper_arm_roll_joint
-        - l_elbow_flex_joint
-        - l_forearm_roll_joint
-        - l_wrist_flex_joint
-        - l_wrist_roll_joint
+goal_topic: /left/goal_transform_stamp

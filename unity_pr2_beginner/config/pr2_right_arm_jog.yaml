@@ -6,7 +6,6 @@ max_position_acceleration: 2.0
 max_position_velocity: 0.5
 max_rotation_velocity: 3.0
 
-
 # Control frequency
 arm_frequency: 20
 
@@ -24,12 +23,14 @@ start_position:
    y: -0.167
    z: 1.009
 
-group_names: right_arm
+start_joints: [-0.568087290316, 0.347189730735, -1.4214391721, -1.48169799187, -0.435971979788, 0.0, 0.0]
 
 
+group_name: right_arm
 
-jog_joint_node:
-  joint_names:
+eef_link: rh_palm
+
+joint_names:
     - r_shoulder_pan_joint
     - r_shoulder_lift_joint
     - r_upper_arm_roll_joint
@@ -38,33 +39,10 @@ jog_joint_node:
     - rh_WRJ2
     - rh_WRJ1
 
-jog_frame_node:
-  base_frame: base_link
-  group_names:
-    - right_arm
-  link_names:
-    - rh_palm
+teleop_signal:
+  start: 2
+  stop: 4
 
-move_group:
-  controller_list:
-    - name: r_arm_controller
-      action_ns: follow_joint_trajectory
-      type: FollowJointTrajectory
-      joints:
-        - r_shoulder_pan_joint
-        - r_shoulder_lift_joint
-        - r_upper_arm_roll_joint
-        - r_elbow_flex_joint
-        - r_forearm_roll_joint
-    - name: hand/rh_wrist_trajectory_controller
-      action_ns: follow_joint_trajectory
-      type: FollowJointTrajectory
-      joints:
-        - rh_WRJ2
-        - rh_WRJ1
-    - name: rh_wrist_trajectory_controller
-      action_ns: follow_joint_trajectory
-      type: FollowJointTrajectory
-      joints:
-        - rh_WRJ2
-        - rh_WRJ1
+arm_controller_name: r_arm_controller
+
+goal_topic: /right/goal_wrist_transform_stamp

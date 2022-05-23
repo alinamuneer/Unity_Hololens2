@@ -29,7 +29,6 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit/robot_state/conversions.h>
 
-
 // Helper macro, throws an exception if a statement fails
 #define VXSTR(s) VSTR(s)
 #define VSTR(s) #s
@@ -93,72 +92,64 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "pr2_arms_control", 1); // 1=no NoSigintHandler
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
                                    ros::console::levels::Debug);
-    ros::NodeHandle node_handle("~");
+    ros::NodeHandle pnh("~");
     ros::NodeHandle nh;
     ros::AsyncSpinner spinner(5);
     spinner.start();
 
     // Maximum joint-space end-effector acceleration
     double max_joint_acceleration = 0.0;
-    V(node_handle.getParam("max_joint_acceleration", max_joint_acceleration));
+    V(pnh.getParam("max_joint_acceleration", max_joint_acceleration));
     V(max_joint_acceleration > 0.0);
 
-    std::vector<double> max_joint_velocity = {2.1, 2.1, 3.0, 3.3, 3.6};
+    // std::vector<double> max_joint_velocity = {2.1, 2.1, 3.0, 3.3, 3.6};
 
     // Maximum cartesian end-effector velocity
     double max_position_velocity = 0;
-    V(node_handle.getParam("max_position_velocity", max_position_velocity));
+    V(pnh.getParam("max_position_velocity", max_position_velocity));
     V(max_position_velocity > 0.0);
 
     double max_rotation_velocity = 0;
-    V(node_handle.getParam("max_rotation_velocity", max_rotation_velocity));
+    V(pnh.getParam("max_rotation_velocity", max_rotation_velocity));
     V(max_rotation_velocity > 0.0);
 
     double max_position_acceleration = 0;
-    V(node_handle.getParam("max_position_acceleration", max_position_acceleration));
+    V(pnh.getParam("max_position_acceleration", max_position_acceleration));
     V(max_position_acceleration > 0.0);
 
     // Control frequency
     int frequency = 0;
-    V(node_handle.getParam("arm_frequency", frequency));
+    V(pnh.getParam("arm_frequency", frequency));
     V(frequency > 0);
     double max_rotation_angle = max_rotation_velocity / frequency;
 
     double velocity_fd_factor;
     double velocity_ff_factor;
     // Maximum joint-space velocity, just for safety. You should mainly rely on
-    V(node_handle.getParam("feedforward_velocity_factor", velocity_ff_factor));
-    V(node_handle.getParam("feedback_velocity_factor", velocity_fd_factor));
+    V(pnh.getParam("feedforward_velocity_factor", velocity_ff_factor));
+    V(pnh.getParam("feedback_velocity_factor", velocity_fd_factor));
 
     bool publish_pos;
+    V(pnh.param<bool>("publish_pos", publish_pos, "false"));
+
     bool publish_wrist;
-    node_handle.param<bool>("publish_pos", publish_pos, "false");
-    node_handle.param<bool>("publish_wrist", publish_wrist, "false");
-
-    Eigen::Vector3d start_position = Eigen::Vector3d::Zero();
-    V(node_handle.getParam("start_position/x", (double &) start_position.x()));
-    V(node_handle.getParam("start_position/y", (double &) start_position.y()));
-    V(node_handle.getParam("start_position/z", (double &) start_position.z()));
-
-    Eigen::Quaterniond start_rotation_q(1, 0, 0, 0);
-    V(node_handle.getParam("start_rotation_q/x", (double &) start_rotation_q.x()));
-    V(node_handle.getParam("start_rotation_q/y", (double &) start_rotation_q.y()));
-    V(node_handle.getParam("start_rotation_q/z", (double &) start_rotation_q.z()));
-    V(node_handle.getParam("start_rotation_q/w", (double &) start_rotation_q.w()));
-
+    V(pnh.param<bool>("publish_wrist", publish_wrist, "false"));
 
     std::string group_name;
-    V(node_handle.getParam("group_name", group_name));
+    V(pnh.getParam("group_name", group_name));
+
+    std::string eef_link;
+    V(pnh.getParam("eef_link", eef_link));
 
     // Init MoveIt stuff
     moveit::planning_interface::MoveGroupInterface move_group(group_name);
     move_group.setMaxAccelerationScalingFactor(0.3);
     move_group.setMaxVelocityScalingFactor(0.3);
     auto robot_model = move_group.getRobotModel();
-    ros::Duration(2.0).sleep();
     auto scene = std::make_shared<planning_scene::PlanningScene>(robot_model);
     auto joint_model_group = robot_model->getJointModelGroup(group_name);
 
+    const std::vector< std::string > move_group_joint_names = joint_model_group->getVariableNames();
     std::string base_frame = robot_model->getModelFrame();  // base_footprint
     //ROS_INFO("Reference frame: %s", base_frame.c_str());
 
@@ -172,32 +163,40 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    //callback: tag position with respect to ur5 world
+    //callback: goal position
+    std::string goal_topic;
+    V(pnh.getParam("goal_topic", goal_topic));
+
     std::mutex hand_transform_mutex;
     Eigen::Vector3d pAvg = Eigen::Vector3d::Zero();
-    Eigen::Vector3d hololens_right_wrist_unity_pos = Eigen::Vector3d::Zero();
-    Eigen::Vector3d previous_hololens_right_wrist_unity_pos = Eigen::Vector3d::Zero();
-    Eigen::Quaterniond hololens_right_wrist_unity_rot = Eigen::Quaterniond(1, 0, 0, 0);
+    Eigen::Vector3d hololens_wrist_unity_pos = Eigen::Vector3d::Zero();
+    Eigen::Vector3d previous_hololens_wrist_unity_pos = Eigen::Vector3d::Zero();
+    Eigen::Quaterniond hololens_wrist_unity_rot = Eigen::Quaterniond(1, 0, 0, 0);
     ros::Subscriber
-    sub_azure = node_handle.subscribe<geometry_msgs::TransformStamped>(
-            "/right/goal_wrist_transform_stamp", 1,
+    sub_azure = nh.subscribe<geometry_msgs::TransformStamped>(
+            goal_topic, 1,
             boost::function < void(
     const geometry_msgs::TransformStamped &)>(
              [&](const geometry_msgs::TransformStamped &data) {
                 std::lock_guard <std::mutex> lock(hand_transform_mutex);
-                    hololens_right_wrist_unity_pos.x() = data.transform.translation.x;
-                    hololens_right_wrist_unity_pos.y() = data.transform.translation.y;
-                    hololens_right_wrist_unity_pos.z() = data.transform.translation.z;
-                    hololens_right_wrist_unity_rot.x() = data.transform.rotation.x;
-                    hololens_right_wrist_unity_rot.y() = data.transform.rotation.y;
-                    hololens_right_wrist_unity_rot.z() = data.transform.rotation.z;
-                    hololens_right_wrist_unity_rot.w() = data.transform.rotation.w;
+                    hololens_wrist_unity_pos.x() = data.transform.translation.x;
+                    hololens_wrist_unity_pos.y() = data.transform.translation.y;
+                    hololens_wrist_unity_pos.z() = data.transform.translation.z;
+                    hololens_wrist_unity_rot.x() = data.transform.rotation.x;
+                    hololens_wrist_unity_rot.y() = data.transform.rotation.y;
+                    hololens_wrist_unity_rot.z() = data.transform.rotation.z;
+                    hololens_wrist_unity_rot.w() = data.transform.rotation.w;
             }));
 
-      // callback: get right pedal data
+      // callback: get the arm teleoperation signal
+      int teleop_start;
+      int teleop_stop;
+      V(pnh.getParam("teleop_signal/start", teleop_start));
+      V(pnh.getParam("teleop_signal/stop", teleop_stop));
+
       std::mutex enable_mutex;
       int PR2_enable_msg = 0;
-      ros::Subscriber enableTeleop_sub = node_handle.subscribe<std_msgs::Int8>(
+      ros::Subscriber enableTeleop_sub = pnh.subscribe<std_msgs::Int8>(
                 "/enable_teleop", 1,
       boost::function < void(const std_msgs::Int8 &)>(
                 [&](const std_msgs::Int8 &enableTeleopMsg) {
@@ -208,7 +207,7 @@ int main(int argc, char **argv) {
     // callback: get realtime joint states
     std::mutex joint_mutex;
     std::vector<double> r_arm_joints(7, 0.0);
-    ros::Subscriber sub_joint_states = node_handle.subscribe<sensor_msgs::JointState>(
+    ros::Subscriber sub_joint_states = pnh.subscribe<sensor_msgs::JointState>(
               "/joint_states", 1,
     boost::function < void(const sensor_msgs::JointState &)>(
               [&](const sensor_msgs::JointState &jointMsg) {
@@ -225,26 +224,36 @@ int main(int argc, char **argv) {
                   r_arm_joints[6] = jointMsg.position[23];}
               }));
 
-    auto r_arm_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/r_arm_controller/command",
-                                                                    1);
-    auto displayPublisher =
-            node_handle.advertise<moveit_msgs::DisplayTrajectory>(
-                    "/display_goal_path", 1, true);
+    std::string arm_controller_name;
+    V(pnh.getParam("arm_controller_name", arm_controller_name));
+    auto arm_trajectory_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/" +
+              arm_controller_name + "/command", 1);
+    auto r_wrist_pub = nh.advertise<trajectory_msgs::JointTrajectory>(
+        "/hand/rh_trajectory_controller/command", 1, true);
 
-    ros::Publisher r_wrist_pub =
-            nh.advertise<trajectory_msgs::JointTrajectory>(
-                    "/hand/rh_trajectory_controller/command", 1, true);
+    auto displayPublisher =
+            pnh.advertise<moveit_msgs::DisplayTrajectory>(
+                    "/display_goal_path", 1, true);
 
     // ros::Publisher pose_publisher =
     //         nh.advertise<geometry_msgs::PoseArray>(
     //                 "/tag_goals", 1, true);
 
     //  set intial position and velocity, acceleration
-    // std::vector< double> start_joints{ -0.827419189408, 0.162603608521, -1.48814677987, -0.852234938778, -0.281983034326, 0.0, 0.0};
-    // keyboard
-    // std::vector< double> start_joints{-0.918119028797, 0.133587549896, -1.49969232737, -1.6778623058, -0.520313032562, 0.0, 0.0};
-    // point forward
-    std::vector< double> start_joints{-0.568087290316, 0.347189730735, -1.4214391721, -1.48169799187, -0.435971979788, 0.0, 0.0};
+    Eigen::Vector3d start_position = Eigen::Vector3d::Zero();
+    V(pnh.getParam("start_position/x", (double &) start_position.x()));
+    V(pnh.getParam("start_position/y", (double &) start_position.y()));
+    V(pnh.getParam("start_position/z", (double &) start_position.z()));
+
+    Eigen::Quaterniond start_rotation_q(1, 0, 0, 0);
+    V(pnh.getParam("start_rotation_q/x", (double &) start_rotation_q.x()));
+    V(pnh.getParam("start_rotation_q/y", (double &) start_rotation_q.y()));
+    V(pnh.getParam("start_rotation_q/z", (double &) start_rotation_q.z()));
+    V(pnh.getParam("start_rotation_q/w", (double &) start_rotation_q.w()));
+
+    std::vector<double> start_joints;
+    V(pnh.getParam("start_joints", start_joints));
+
     Eigen::Vector3d goal_position = start_position;
     Eigen::Vector3d position_velocity = Eigen::Vector3d::Zero();;
     Eigen::Matrix3d rotation_matrix_velocity = Eigen::Matrix3d::Zero();
@@ -293,6 +302,7 @@ int main(int argc, char **argv) {
        // V(move_group.setJointValueTarget(goal_state));
        V(move_group.setJointValueTarget(start_joints));
        auto success = move_group.move();
+
        if (success) {
            ROS_INFO_STREAM("success");
            goal_state.setJointGroupPositions(joint_model_group, start_joints);
@@ -311,9 +321,9 @@ int main(int argc, char **argv) {
         {
           std::lock_guard <std::mutex> lock_pedal(enable_mutex);
           enable_PR2 = PR2_enable_msg;
-          ROS_WARN_STREAM("enable_PR2 is " << enable_PR2);
         }
-        if (enable_PR2==2)
+
+        if (enable_PR2!=teleop_stop)
         // ik calculation
         {
             // Setup BioIK goals
@@ -323,11 +333,11 @@ int main(int argc, char **argv) {
 
             // printVector("goal_position ik", goal_position);
             ik_options.goals.emplace_back(
-                    new bio_ik::PositionGoal("rh_palm", toTF(goal_position)));
+                    new bio_ik::PositionGoal(eef_link, toTF(goal_position)));
             ik_options.goals.emplace_back(
-                   new bio_ik::OrientationGoal("rh_palm", QuaterniontoTF(goal_rotation_q)));
+                   new bio_ik::OrientationGoal(eef_link, QuaterniontoTF(goal_rotation_q)));
 
-            printVector("goal position", goal_position);
+            // printVector("goal position", goal_position);
 
             // ik_options.goals.emplace_back(new bio_ik::SideGoal(
             //         "r_shoulder_pan_link", tf2::Vector3(1, 0, 0), tf2::Vector3(0, 1, 0)));
@@ -335,7 +345,6 @@ int main(int argc, char **argv) {
             //             new bio_ik::MinimalDisplacementGoal(1.0, false));
             ik_options.goals.emplace_back(new bio_ik::RegularizationGoal(0.5));
 
-            //goal_state.copyJointGroupPositions(joint_model_group, goal_joint_values);
             //for (int j = 0; j <goal_joint_values.size(); j++) {
             //    ROS_WARN_STREAM("before ik JOINT IS " << goal_joint_values[j]);}
             // Call BioIK
@@ -361,8 +370,6 @@ int main(int argc, char **argv) {
             // Exit if IK failed
             if (!ik_ok) {
                 ROS_ERROR_STREAM("ik failed");
-                //return -1;
-                //continue;
             }
             else{
                     goal_state.copyJointGroupPositions(joint_model_group, goal_joint_values);
@@ -387,6 +394,9 @@ int main(int argc, char **argv) {
                     wrist_goal.points.emplace_back();
                     wrist_goal.joint_names.emplace_back("rh_WRJ2");
                     wrist_goal.joint_names.emplace_back("rh_WRJ1");
+
+                    // for (int j = 0; j <goal_joint_values.size(); j++) {
+                    //    ROS_WARN_STREAM("goal_joint_values IS " << goal_joint_values[j]);}
 
                     // Apply joint-space velocity and acceleration limit for arm
 //                    {
@@ -434,32 +444,54 @@ int main(int argc, char **argv) {
                     //     ROS_INFO_STREAM("joint " << n );}
                     //for (auto &n : joint_model_group->getVariableNames()) {
                     //     ROS_INFO_STREAM("joint " << n );}
-                    if (publish_pos)
+
+                    if (group_name == "right_arm")
                     {
-                        trajectory_msgs::JointTrajectory arm_joint_trajectory;
-                        arm_joint_trajectory.joint_names = joint_model_group->getVariableNames()[:-2];
-                        arm_joint_trajectory.points.emplace_back();
-                        for (int j=0; j <5; j++) {
-                            arm_joint_trajectory.points.back().positions.emplace_back(
+                      if (publish_pos)
+                      {
+                          trajectory_msgs::JointTrajectory arm_joint_trajectory;
+                          arm_joint_trajectory.points.emplace_back();
+                          for (int j=0; j <5; j++) {
+                              arm_joint_trajectory.joint_names.emplace_back(move_group_joint_names[j]);
+                              arm_joint_trajectory.points.back().positions.emplace_back(
+                                  goal_joint_values[j]);
+                          }
+                          arm_joint_trajectory.points.back().time_from_start =
+                                  ros::Duration(1.0 / frequency);
+                          arm_trajectory_pub.publish(arm_joint_trajectory);
+                      }
+                      if (publish_wrist){
+                        for (int j=5; j <7; j++) {
+                            wrist_goal.points.back().positions.emplace_back(
                                 goal_joint_values[j]);
                         }
-                        arm_joint_trajectory.points.back().time_from_start =
-                                ros::Duration(1.0 / frequency);
-                        r_arm_pub.publish(arm_joint_trajectory);
-                        goal_state.setJointGroupPositions(joint_model_group, goal_joint_values);
-                    }
-                    if (publish_wrist){
-                      for (int j=5; j <7; j++) {
-                          wrist_goal.points.back().positions.emplace_back(
-                              goal_joint_values[j]);
+                          wrist_goal.points.back().time_from_start = ros::Duration(1.0 / frequency);
+                          r_wrist_pub.publish(wrist_goal);
                       }
-                        wrist_goal.points.back().time_from_start = ros::Duration(1.0 / frequency);
-                        r_wrist_pub.publish(wrist_goal);
+                    }
+                    else
+                    {
+                      if (publish_pos)
+                      {
+                          trajectory_msgs::JointTrajectory arm_joint_trajectory;
+                          arm_joint_trajectory.joint_names = joint_model_group->getVariableNames();
+                          arm_joint_trajectory.points.emplace_back();
+                          for (int j=0; j <7; j++) {
+                              arm_joint_trajectory.joint_names.emplace_back(move_group_joint_names[j]);
+                              arm_joint_trajectory.points.back().positions.emplace_back(
+                                  goal_joint_values[j]);
+                          }
+                          arm_joint_trajectory.points.back().time_from_start =
+                                  ros::Duration(1.0 / frequency);
+                          arm_trajectory_pub.publish(arm_joint_trajectory);
+                      }
                     }
 
+                    goal_state.setJointGroupPositions(joint_model_group, goal_joint_values);
+
+
                     //goal_state.copyJointGroupPositions(joint_model_group, goal_joint_values);
-                    //for (int j = 0; j <goal_joint_values.size(); j++) {
-                    //    ROS_WARN_STREAM("after set JOINT IS " << goal_joint_values[j]);}
+
                     // visualization
                     {
                         moveit_msgs::DisplayTrajectory dtm;
@@ -468,7 +500,8 @@ int main(int argc, char **argv) {
                         trajectory_msgs::JointTrajectory arm_joint_trajectory;
                         arm_joint_trajectory.joint_names = joint_model_group->getVariableNames();
                         arm_joint_trajectory.points.emplace_back();
-                        //   for (auto &name : arm_joint_trajectory.joint_names) {
+                        // for (auto &name : arm_joint_trajectory.joint_names)
+                        //     ROS_WARN_STREAM("JOINT name is " << name);
                         for (int j=0; j < goal_joint_values.size(); j++) {
                                 // arm_joint_trajectory.points.back().positions.emplace_back(
                                 //         goal_state.getVariablePosition(name));
@@ -495,13 +528,13 @@ int main(int argc, char **argv) {
            ROS_ERROR_STREAM("timing error, control may be unstable");
        }
 
-        if (enable_PR2==2){
+        if (enable_PR2!=teleop_stop){
           geometry_msgs::PoseArray pose_goal;
           pose_goal.header.frame_id = "base_footprint";
           geometry_msgs::TransformStamped base_palm_tf;
 
           try {
-                base_palm_tf = tfBuffer.lookupTransform("base_footprint", "rh_palm",
+                base_palm_tf = tfBuffer.lookupTransform("base_footprint", eef_link,
                                                             ros::Time(0), ros::Duration(2.0));
           }
           catch (tf2::TransformException &ex) {
@@ -513,7 +546,7 @@ int main(int argc, char **argv) {
         // Eigen::Quaterniond qf_current(current_pose_affine.linear());
         }
 
-        if (enable_PR2==0 || enable_PR2==4){
+        if (enable_PR2==0 || enable_PR2==teleop_stop){
            previous_joint_velocity = {0, 0, 0, 0, 0};
            previous_position_velocity= Eigen::Vector3d::Zero();
         }
@@ -524,8 +557,8 @@ int main(int argc, char **argv) {
         {
             std::lock_guard <std::mutex> lock_tag(hand_transform_mutex);
             Eigen::Affine3d hololens_right_wrist = Eigen::Affine3d::Identity();
-            hololens_right_wrist.translation() = hololens_right_wrist_unity_pos;
-            hololens_right_wrist.linear() = hololens_right_wrist_unity_rot.toRotationMatrix();
+            hololens_right_wrist.translation() = hololens_wrist_unity_pos;
+            hololens_right_wrist.linear() = hololens_wrist_unity_rot.toRotationMatrix();
 
             Eigen::Affine3d pr2base_palm = pr2base_hololenscamera * hololens_right_wrist;
             p = pr2base_palm.translation();
@@ -534,10 +567,10 @@ int main(int argc, char **argv) {
 
     // Eigen::Affine3d pr2base_urworld  = Eigen::Affine3d(Eigen::Quaterniond(0.7071068, 0.0, 0.0, -0.7071068));
         // initialize previous goal position when restart the teleoperation
-        if ((enable_PR2==2 && (previous_enable==4) || enable_PR2==0) || iteration==0){
+        if ((enable_PR2==teleop_start && (previous_enable==teleop_stop)) || enable_PR2==0 || iteration==0){
              geometry_msgs::TransformStamped base_palm_tf;
             try {
-                base_palm_tf = tfBuffer.lookupTransform("base_footprint", "rh_palm",
+                base_palm_tf = tfBuffer.lookupTransform("base_footprint", eef_link,
                                                             ros::Time(0), ros::Duration(1.0));
             }
             catch (tf2::TransformException &ex) {
@@ -555,9 +588,9 @@ int main(int argc, char **argv) {
            start_p = p;
            start_m = m;
         }
-             // linear constraints
 
-        if (enable_PR2==2){
+        // linear constraints
+        if (enable_PR2!=teleop_stop){
         {
              position_velocity = (p - previous_goal_position) *  frequency;
              if (position_velocity.norm() > max_position_velocity) {
