@@ -560,7 +560,7 @@ int main(int argc, char **argv) {
             hololens_right_wrist.translation() = hololens_wrist_unity_pos;
             hololens_right_wrist.linear() = hololens_wrist_unity_rot.toRotationMatrix();
 
-            Eigen::Affine3d pr2base_palm = pr2base_hololenscamera * hololens_right_wrist;
+            Eigen::Affine3d pr2base_palm = hololens_right_wrist;
             p = pr2base_palm.translation();
             m = pr2base_palm.linear();
         }
