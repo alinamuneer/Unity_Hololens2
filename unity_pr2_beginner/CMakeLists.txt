@@ -19,6 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
   pr2_controllers_msgs
   actionlib
   rosbag
+  pr2_gripper_sensor_msgs
+pr2_controllers_msgs
 )
 find_package(Eigen3 REQUIRED)
 
@@ -36,3 +38,10 @@ target_link_libraries(pr2_right_arm_control ${catkin_LIBRARIES} ccd)
 add_executable(pr2_arms_control src/pr2_arms_control.cpp)
 add_dependencies(pr2_arms_control ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pr2_arms_control ${catkin_LIBRARIES} ccd)
+
+add_executable(pr2_left_gripper_control src/pr2_left_gripper_control.cpp)
+target_link_libraries(pr2_left_gripper_control ${catkin_LIBRARIES})
+
+add_executable(pr2_shadow_hand_contol src/pr2_shadow_hand_contol.cpp)
+add_dependencies(pr2_shadow_hand_contol ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pr2_shadow_hand_contol ${catkin_LIBRARIES})

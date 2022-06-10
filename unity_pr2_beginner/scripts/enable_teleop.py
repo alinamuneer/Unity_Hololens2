@@ -3,7 +3,7 @@ import rospy
 from std_msgs.msg import Int8
 import tty, sys, termios
 
-if __name__ == '__main__':
+def main():
     rospy.init_node('enable_teleop', anonymous=True)
     pub = rospy.Publisher('enable_teleop', Int8, queue_size=1)
 
@@ -40,3 +40,6 @@ if __name__ == '__main__':
             continue
         pub.publish(msg)
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN,filedescriptors)
+
+if __name__ == '__main__':
+    main()

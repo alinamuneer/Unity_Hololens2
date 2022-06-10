@@ -269,7 +269,12 @@ int main(int argc, char **argv) {
     std::vector<double> wrist_goal_array;
 
     // todo: static tf from hololens camera to pr2 base_footprint
-    Eigen::Affine3d pr2base_hololenscamera  = Eigen::Affine3d(Eigen::Quaterniond(0.0, 0, 0, 1.0));
+
+    Eigen::Affine3d pr2base_hololenscamera;
+    if (group_name == "right_arm")
+      pr2base_hololenscamera  = Eigen::Affine3d(Eigen::Quaterniond(1.0, 0, 0, 0.0));
+    else
+      pr2base_hololenscamera  = Eigen::Affine3d(Eigen::Quaterniond(0.7071068, 0, 0.7071068, 0.0)) * Eigen::Affine3d(Eigen::Quaterniond(-0.7071068, 0.7071068, 0.0, 0.0));
 
     // static tf from torso_lift)link to pr2 base_footprint
     tf2_ros::TransformBroadcaster tf_broadcaster;
@@ -560,7 +565,9 @@ int main(int argc, char **argv) {
             hololens_right_wrist.translation() = hololens_wrist_unity_pos;
             hololens_right_wrist.linear() = hololens_wrist_unity_rot.toRotationMatrix();
 
-            Eigen::Affine3d pr2base_palm = hololens_right_wrist;
+            Eigen::Affine3d pr2base_palm =  hololens_right_wrist * pr2base_hololenscamera;
+            std::cout << pr2base_palm.matrix() << std::endl;
+
             p = pr2base_palm.translation();
             m = pr2base_palm.linear();
         }

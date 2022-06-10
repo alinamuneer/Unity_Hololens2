@@ -20,6 +20,8 @@
   <build_depend>moveit_core</build_depend>
   <build_depend>bio_ik</build_depend>
   <build_depend>rosbag</build_depend>
+  <build_depend>pr2_gripper_sensor_msgs</build_depend>
+  <build_depend>pr2_controllers_msgs</build_depend>
 
   <run_depend>rosbag</run_depend>
   <run_depend>tf2_geometry_msgs</run_depend>
@@ -30,5 +32,6 @@
   <run_depend>tf2</run_depend>
   <run_depend>moveit_ros_planning</run_depend>
   <run_depend>moveit_core</run_depend>
-
+  <run_depend>pr2_gripper_sensor_msgs</run_depend>
+  <run_depend>pr2_controllers_msgs</run_depend>
 </package>

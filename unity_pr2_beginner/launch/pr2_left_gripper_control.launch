@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+  <group ns="l_gripper_controller">
+    <node name="gripper_action_node"
+          pkg="tams_pr2_gripper_action" type="pr2_gripper_action" output="screen">
+      <!-- needed for stall detection in simulation with joint "jitter" -->
+      <param name="stall_velocity_threshold" value="0.33" type="double"/>
+      <param name="stall_timeout" value="0.5" type="double"/>
+      <param name="max_effort" value="10000.0" type="double"/>
+    </node>
+  </group>
+
+  <node name="pr2_left_gripper_control" pkg="unity_pr2_beginner" type="pr2_left_gripper_control" output="screen"/>
+</launch>
