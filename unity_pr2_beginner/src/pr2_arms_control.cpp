@@ -38,8 +38,6 @@
     throw std::runtime_error(VXSTR(x));                                        \
   }
 
-ros::Publisher r_arm_vel_pub;
-
 // Converts and Eigen vector to a TF2 vector
 tf2::Vector3 toTF(const Eigen::Vector3d &v) {
     return tf2::Vector3(v.x(), v.y(), v.z());
@@ -69,15 +67,6 @@ void printTransform( std::string prefix, tf2::Transform trafo ) {
             trafo.getRotation().w() );
 }
 
-void STOP_VEL_CONTROLLER(int sig) {
-    std::cout << "singal handler (SIGINT/SIGKILL) started" << std::endl;
-
-    std_msgs::Float64MultiArray reset_arm_joints_vel;
-    reset_arm_joints_vel.data.assign(5, 0);
-    r_arm_vel_pub.publish(reset_arm_joints_vel);
-    ros::shutdown();
-}
-
 double clip(double x, double maxv = 0, double minv = 0) {
     if (x > maxv)
         x = maxv;
@@ -87,9 +76,8 @@ double clip(double x, double maxv = 0, double minv = 0) {
 }
 
 int main(int argc, char **argv) {
-    signal(SIGINT, STOP_VEL_CONTROLLER);
     // Init ROS
-    ros::init(argc, argv, "pr2_arms_control", 1); // 1=no NoSigintHandler
+    ros::init(argc, argv, "pr2_arms_control"); // 1=no NoSigintHandler
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
                                    ros::console::levels::Debug);
     ros::NodeHandle pnh("~");
@@ -255,7 +243,7 @@ int main(int argc, char **argv) {
     V(pnh.getParam("start_joints", start_joints));
 
     Eigen::Vector3d goal_position = start_position;
-    Eigen::Vector3d position_velocity = Eigen::Vector3d::Zero();;
+    Eigen::Vector3d position_velocity = Eigen::Vector3d::Zero();
     Eigen::Matrix3d rotation_matrix_velocity = Eigen::Matrix3d::Zero();
     Eigen::Quaterniond goal_rotation_q = start_rotation_q;
     std::vector<double> goal_joint_values(7, 0.0);
@@ -344,8 +332,6 @@ int main(int argc, char **argv) {
 
             // printVector("goal position", goal_position);
 
-            // ik_options.goals.emplace_back(new bio_ik::SideGoal(
-            //         "r_shoulder_pan_link", tf2::Vector3(1, 0, 0), tf2::Vector3(0, 1, 0)));
             // ik_options.goals.emplace_back(
             //             new bio_ik::MinimalDisplacementGoal(1.0, false));
             ik_options.goals.emplace_back(new bio_ik::RegularizationGoal(0.5));
@@ -482,7 +468,7 @@ int main(int argc, char **argv) {
                           arm_joint_trajectory.joint_names = joint_model_group->getVariableNames();
                           arm_joint_trajectory.points.emplace_back();
                           for (int j=0; j <7; j++) {
-                              arm_joint_trajectory.joint_names.emplace_back(move_group_joint_names[j]);
+                              //arm_joint_trajectory.joint_names.emplace_back(move_group_joint_names[j]);
                               arm_joint_trajectory.points.back().positions.emplace_back(
                                   goal_joint_values[j]);
                           }

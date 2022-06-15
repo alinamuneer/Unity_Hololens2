@@ -1,0 +1,13 @@
+# Maximum cartesian end-effector velocity
+max_cartersion_velocity: 0.5
+
+# Control frequency
+hand_frequency: 30
+
+start_joints: [0.0, 0.0, 0.0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.35, 0.0, 0.0, 0.0, 0.35, 0.0, 0.0, 0.0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.35]
+
+group_name: right_hand
+
+teleop_signal:
+  start: 2
+  stop: 4

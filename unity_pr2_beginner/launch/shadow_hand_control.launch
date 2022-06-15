@@ -1,0 +1,9 @@
+<launch>
+  <arg name="publish_pos" default="false"/>
+
+ <node name="pr2_shadow_hand_contol"  pkg="unity_pr2_beginner" type="pr2_shadow_hand_contol" output="screen">
+      <param name="publish_pos" value="$(arg publish_pos)"/>
+      <param name="show_hand_inRviz" value="true"/>
+      <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_shadow_hand.yaml"/>
+ </node>
+</launch>
