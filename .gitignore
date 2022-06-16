@@ -1,0 +1,11 @@
+#Ignore all .meta file
+*.meta
+#But not source file with postfix. which is everything but a folder
+!*.*.meta
+
+
+# ignore some Unity project folders
+/20220429RosSharp/Build
+/20220429RosSharp/Library
+/20220429RosSharp/Logs
+/20220429RosSharp/UserSettings

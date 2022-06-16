@@ -14,9 +14,12 @@ namespace RosSharp.RosBridgeClient
         public string child_frame_ID;
         public bool publish = false;
 
-
-
         private MessageTypes.Geometry.TransformStamped message;
+
+        private void Awake()
+        {
+            PublishedTransform = new GameObject().transform;
+        }
 
         protected override void Start()
         {

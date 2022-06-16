@@ -13,7 +13,7 @@ namespace RosSharp.RosBridgeClient
             base.Start();
             // Init Jog Frame Publisher
             TSPublisher = gameObject.AddComponent<TransformStampedPublisher>();
-            TSPublisher.Topic = "/right/goal_wrist_transform_stamp";
+            TSPublisher.Topic = "/right/goal_transform_stamp";
             TSPublisher.parent_frame_ID = "base_link";
             TSPublisher.child_frame_ID = "rh_palm";
             TSPublisher.PublishedTransform.SetParent(GameObject.Find("base_link").transform);
