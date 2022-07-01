@@ -15,7 +15,7 @@ limitations under the License.
 
 // Added allocation free alternatives
 // UoK , 2019, Odysseas Doumas (od79@kent.ac.uk / odydoum@gmail.com)
-
+using System;
 using UnityEngine;
 
 namespace RosSharp.RosBridgeClient
@@ -24,6 +24,8 @@ namespace RosSharp.RosBridgeClient
     {
         public MessageTypes.Geometry.Pose[] Poses;
         public string FrameId = "Unity";
+
+        public bool publish = false;
 
         private MessageTypes.Geometry.PoseArray message;
 
@@ -35,6 +37,8 @@ namespace RosSharp.RosBridgeClient
 
         private void FixedUpdate()
         {
+            UpdateMessage();
+            UpdateMessage();
             UpdateMessage();
         }
 
@@ -53,7 +57,9 @@ namespace RosSharp.RosBridgeClient
         {
             message.header.Update();
             message.poses = Poses;
-            Publish(message);
+            // Publish(message);
+            if (publish)
+               Publish(message);
         }
 
         private static void GetGeometryPoint(Vector3 position, MessageTypes.Geometry.Point geometryPoint)

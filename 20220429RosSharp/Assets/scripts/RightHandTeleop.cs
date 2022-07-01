@@ -1,36 +1,36 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using Microsoft.MixedReality.Toolkit.Input;
 using Microsoft.MixedReality.Toolkit.Utilities;
-using UnityEngine;
-using System;
 using RosSharp.RosBridgeClient.MessageTypes.Geometry;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.XR;
+using System;
+
 
 namespace RosSharp.RosBridgeClient
 {
-    public class RightHandPublisherWRTFrame : MonoBehaviour
+    public class RightHandTeleop : MonoBehaviour
     {
         public string TopicRight;
+        protected bool enabledTeleop = false;
 
         private PoseArrayPublisher rightHandPublisher;
 
         private static readonly int jointCount = Enum.GetNames(typeof(TrackedHandJoint)).Length;
         public Handedness recordingHandRight = Handedness.Right;
 
-        private List<GameObject> keypointTransform;
-        private List<string> keypointTransformNames; 
+        GameObject[] keypointsTransform;
+        string[] keypointsTransformNames;
 
-        private void Start()
+        void Start()
         {
             // Right hand
             rightHandPublisher = gameObject.AddComponent<PoseArrayPublisher>();
             rightHandPublisher.Topic = TopicRight;
-            rightHandPublisher.FrameId = "base_link";
+            rightHandPublisher.FrameId = "base_footprint";
             rightHandPublisher.Poses = new MessageTypes.Geometry.Pose[jointCount];
 
-            keypointTransformNames = new List<string>
-            {
+            keypointsTransformNames = new string[27]{
                 "empltyTransform",
                 "wristTransform",
                 "palmTransform",
@@ -41,28 +41,40 @@ namespace RosSharp.RosBridgeClient
                 "pinkyMetacarpalTransform","pinkyKnuckleTransform", "pinkeyMiddleTransform", "pinkyDistalTransform", "pinkyTipTransform",
             };
 
+            // initialize keypointsTransform 
+            keypointsTransform = new GameObject[jointCount];
+
             for (int i = 0; i < jointCount; ++i)
             {
-                keypointTransform.Add(new GameObject(keypointTransformNames[i]));
-                keypointTransform[i].transform.SetParent(GameObject.Find("base_link").transform);
+                GameObject keypointTransform = new GameObject(keypointsTransformNames[i]);
+                keypointTransform.transform.SetParent(GameObject.Find("base_footprint").transform);
+                keypointsTransform[i] = keypointTransform;
             }
-    }
+        }
 
-        private void FixedUpdate()
+        // Update is called once per frame
+        private void Update()
         {
+            if (!enabledTeleop)
+                return;
+
             MixedRealityPose[] jointPosesRight = new MixedRealityPose[jointCount];
 
             for (int i = 0; i < jointCount; ++i)
             {
                 HandJointUtils.TryGetJointPose((TrackedHandJoint)i, recordingHandRight, out jointPosesRight[i]);
+                keypointsTransform[i].transform.SetPositionAndRotation(jointPosesRight[i].Position, jointPosesRight[i].Rotation);
+                keypointsTransform[i].transform.Rotate(0, -90, -90);
 
-                keypointTransform[i].transform.SetPositionAndRotation(jointPosesRight[i].Position, jointPosesRight[i].Rotation);
-                keypointTransform[i].transform.Rotate(0, -90, -90);
+                MessageTypes.Geometry.Pose pose = new MessageTypes.Geometry.Pose();
+                pose.position = GetGeometryPoint(keypointsTransform[i].transform.position.Unity2Ros());
+                pose.orientation = GetGeometryQuaternion(keypointsTransform[i].transform.rotation.Unity2Ros());
 
-                rightHandPublisher.Poses[i].position = GetGeometryPoint(keypointTransform[i].transform.localPosition.Unity2Ros());
-                rightHandPublisher.Poses[i].orientation = GetGeometryQuaternion(keypointTransform[i].transform.localRotation.Unity2Ros());
+                Debug.LogError(pose.position.x);
+
+                rightHandPublisher.Poses[i] = pose;
+            }
         }
-    }
 
 
         private MessageTypes.Geometry.Point GetGeometryPoint(UnityEngine.Vector3 position)
@@ -82,6 +94,19 @@ namespace RosSharp.RosBridgeClient
             geometryQuaternion.z = quaternion.z;
             geometryQuaternion.w = quaternion.w;
             return geometryQuaternion;
+        }
+
+
+        public void StartTeleop()
+        {
+            enabledTeleop = true;
+            rightHandPublisher.publish = true;
+        }
+
+        public void StopTeleop()
+        {
+            enabledTeleop = false;
+            rightHandPublisher.publish = false;
         }
     }
 }

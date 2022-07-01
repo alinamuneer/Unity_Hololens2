@@ -115,8 +115,9 @@ namespace RosSharp.Urdf.Editor
         
         public static void SetUrdfMaterial(GameObject gameObject, Link.Visual.Material urdfMaterial)
         {
-            if (urdfMaterial != null)
-            {
+            //if (urdfMaterial != null)
+            if (false)
+             {
                 var material = CreateMaterial(urdfMaterial);
                 SetMaterial(gameObject, material);
             }
