@@ -45,4 +45,6 @@ teleop_signal:
 
 arm_controller_name: r_arm_controller
 
-goal_topic: /right/goal_wrist_transform_stamp
+goal_topic: /right/goal_transform_stamp
+
+display_trajectory_name: right_display_goal_path

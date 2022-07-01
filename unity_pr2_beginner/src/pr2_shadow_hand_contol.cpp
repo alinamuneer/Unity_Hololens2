@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 
     ros::Subscriber
     sub_hand_keypoints = nh.subscribe<geometry_msgs::PoseArray>(
-            "/right_hand", 1,
+            "/right_hand_keypoints", 1,
             boost::function < void(
     const geometry_msgs::PoseArray &)>(
              [&](const geometry_msgs::PoseArray &data) {
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
 
     auto displayPublisher =
             pnh.advertise<moveit_msgs::DisplayTrajectory>(
-                    "/display_hand_path", 1, true);
+                    "display_hand_path", 1, true);
 
     // initial value setting
     std::vector<double> start_joints;
@@ -409,7 +409,7 @@ int main(int argc, char **argv) {
             // wrist
             //human_target_keypoints[0] = toVector3d(hololens_right_hand_keypoints.poses[1].position);
 
-            // thumb tip, proxiaml, metarcapal
+            // tip
             human_target_keypoints[0] = toVector3d(hololens_right_hand_keypoints.poses[6].position);
             human_target_keypoints[1] = toVector3d(hololens_right_hand_keypoints.poses[11].position);
             human_target_keypoints[2] = toVector3d(hololens_right_hand_keypoints.poses[16].position);
@@ -452,7 +452,6 @@ int main(int argc, char **argv) {
                  }
                 marker_pub2.publish(hand_points);
             }
-
         }
 
         if ((enable_PR2==teleop_start && (previous_enable==teleop_stop)) || enable_PR2==0 || iteration==0)
@@ -479,25 +478,29 @@ int main(int argc, char **argv) {
         if (enable_PR2!=teleop_stop)
         {
             for (int j=0; j < human_target_keypoints.size(); j++) {
+              ROS_ERROR_STREAM("SIZE is " <<  human_target_keypoints.size());
                 Eigen::Vector3d cartersion_velocity = (human_target_keypoints[j] - previous_human_target_keypoints[j]) *  frequency;
+
                 if (cartersion_velocity.norm() > max_cartersion_velocity) {
                     ROS_WARN_STREAM("Joint vel is " <<  cartersion_velocity.norm() << ". TOO BIG");
                     cartersion_velocity = cartersion_velocity.normalized() * max_cartersion_velocity;
                 }
 
+                  if (j==3)
+                  {
+                    printVector("human_target_keypoints", human_target_keypoints[j]);
+                    printVector("previous_human_target_keypoints", previous_human_target_keypoints[j]);
+                    printVector("cartersion_velocity", cartersion_velocity);
+                  }
+
                 human_target_keypoints[j] = previous_human_target_keypoints[j] + cartersion_velocity * (1.0 / frequency);
+
+
+
+
                 previous_human_target_keypoints[j] = human_target_keypoints[j];
                 goal_position[j] = start_real_keypoints[j] + (human_target_keypoints[j] - start_human_target_keypoints[j]);
 
-                // if (j==3)
-                // {
-                //   printVector("human_target_keypoints", human_target_keypoints[j]);
-                //   printVector("previous_human_target_keypoints", previous_human_target_keypoints[j]);
-                //   printVector("new human_target_keypoints", human_target_keypoints[j]);
-                //   printVector("start_real_keypoints", start_real_keypoints[j]);
-                //   printVector("start_human_target_keypoints", start_human_target_keypoints[j]);
-                //   printVector("goal_position", goal_position[j]);
-                // }
             }
         }
 

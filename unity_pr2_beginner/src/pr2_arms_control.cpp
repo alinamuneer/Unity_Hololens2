@@ -219,13 +219,15 @@ int main(int argc, char **argv) {
     auto r_wrist_pub = nh.advertise<trajectory_msgs::JointTrajectory>(
         "/hand/rh_trajectory_controller/command", 1, true);
 
+    std::string display_trajectory_name;
+    V(pnh.getParam("display_trajectory_name", display_trajectory_name));
     auto displayPublisher =
-            pnh.advertise<moveit_msgs::DisplayTrajectory>(
-                    "/display_goal_path", 1, true);
+            pnh.advertise<moveit_msgs::DisplayTrajectory>("/" +
+                    display_trajectory_name, 1, true);
 
-    // ros::Publisher pose_publisher =
-    //         nh.advertise<geometry_msgs::PoseArray>(
-    //                 "/tag_goals", 1, true);
+    ros::Publisher pose_publisher =
+            pnh.advertise<geometry_msgs::PoseArray>(
+                    "/tag_goals", 1, true);
 
     //  set intial position and velocity, acceleration
     Eigen::Vector3d start_position = Eigen::Vector3d::Zero();
@@ -551,8 +553,8 @@ int main(int argc, char **argv) {
             hololens_right_wrist.translation() = hololens_wrist_unity_pos;
             hololens_right_wrist.linear() = hololens_wrist_unity_rot.toRotationMatrix();
 
-            Eigen::Affine3d pr2base_palm =  hololens_right_wrist * pr2base_hololenscamera;
-            std::cout << pr2base_palm.matrix() << std::endl;
+            Eigen::Affine3d pr2base_palm =  pr2base_hololenscamera * hololens_right_wrist;
+            // std::cout << pr2base_palm.matrix() << std::endl;
 
             p = pr2base_palm.translation();
             m = pr2base_palm.linear();
@@ -621,6 +623,18 @@ int main(int argc, char **argv) {
         Eigen::Quaterniond qf_goal(m_goal);
         goal_rotation_q = qf_goal.normalized();
         goal_position = start_pose_affine.translation() + (p - start_p);
+
+        geometry_msgs::PoseArray pose_goal;
+
+        pose_goal.poses.emplace_back();
+        pose_goal.poses.back().position.x = goal_position.x();
+        pose_goal.poses.back().position.y = goal_position.y();
+        pose_goal.poses.back().position.z = goal_position.z();
+        pose_goal.poses.back().orientation.z = goal_rotation_q.z();
+        pose_goal.poses.back().orientation.x = goal_rotation_q.x();
+        pose_goal.poses.back().orientation.y = goal_rotation_q.y();
+        pose_goal.poses.back().orientation.w = goal_rotation_q.w();
+        pose_publisher.publish(pose_goal);
 
         previous_goal_position = p;
         previous_position_velocity = position_velocity;
