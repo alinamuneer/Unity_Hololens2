@@ -419,7 +419,7 @@ int main(int argc, char **argv) {
 //                                }
 //                                //ROS_INFO_STREAM("vel inter "<< vel);
 //                                goal_joint_values[j] = previous_goal_joint_values[j] + vel * (1.0 / frequency);
-//                                //ROS_INFO_STREAM("goal_joint_values " <<goal_joint_values[j] << " previous_goal_joint_values " << previous_goal_joint_values[j] );
+//                            r_arm_vel_pub    //ROS_INFO_STREAM("goal_joint_values " <<goal_joint_values[j] << " previous_goal_joint_values " << previous_goal_joint_values[j] );
 //                                joint_velocity[j] = vel;
 //                            } else {
 //                                double wrist_vel =

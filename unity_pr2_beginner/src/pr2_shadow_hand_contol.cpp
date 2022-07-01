@@ -30,13 +30,22 @@
     throw std::runtime_error(VXSTR(x));                                        \
   }
 
-// Converts and Eigen vector to a TF2 vector
+// Converts an Eigen vector to a TF2 vector
 tf2::Vector3 toTF(const Eigen::Vector3d &v) {
     return tf2::Vector3(v.x(), v.y(), v.z());
 }
 
+// Converts geometry_msgs/Point to Eigen vector
 Eigen::Vector3d toVector3d(const geometry_msgs::Point &v) {
-    return Eigen::Vector3d(v.x, v.y, v.z);
+    return Eigen::Vector3d(-v.x, v.y, v.z);
+}
+
+void printVector( std::string prefix, Eigen::Vector3d vector ) {
+  ROS_INFO( "%s: (%6.3f %6.3f %6.3f)",
+            prefix.c_str(),
+            vector.x(),
+            vector.y(),
+            vector.z() );
 }
 
 int main(int argc, char **argv) {
@@ -59,10 +68,13 @@ int main(int argc, char **argv) {
     bool show_hand_inRviz;
     V(pnh.param<bool>("show_hand_inRviz", show_hand_inRviz, "false"));
     ros::Publisher marker_pub = pnh.advertise<visualization_msgs::MarkerArray>("robot_keypoints", 1);
+    ros::Publisher marker_pub2 = pnh.advertise<visualization_msgs::MarkerArray>("robot_keypoints2", 1);
 
     // hand keypoints from hololens
     std::mutex hololens_right_hand_keypoints_mutex;
     geometry_msgs::PoseArray hololens_right_hand_keypoints;
+    // without this initialization, when there is no data coming at begining, the code will die directly
+    hololens_right_hand_keypoints.poses.emplace_back();
 
     ros::Subscriber
     sub_hand_keypoints = nh.subscribe<geometry_msgs::PoseArray>(
@@ -71,43 +83,42 @@ int main(int argc, char **argv) {
     const geometry_msgs::PoseArray &)>(
              [&](const geometry_msgs::PoseArray &data) {
                 std::lock_guard <std::mutex> lock(hololens_right_hand_keypoints_mutex);
-                std::cout << data << std::endl;
-
                     if (data.poses[1].position.x == 0)
+                    {
                       return -1;
+                    }
                     else
                       hololens_right_hand_keypoints = data;
 
-                std::cout << data << std::endl;
-                  ROS_WARN_STREAM("hololens_right_hand_keypoints.poses[6].position: x:  " <<  hololens_right_hand_keypoints.poses[6].position.x
-                      << ", y: " << hololens_right_hand_keypoints.poses[6].position.y << ", z:" << hololens_right_hand_keypoints.poses[6].position.z);
+                  // ROS_WARN_STREAM("hololens_right_hand_keypoints.poses[6].position: x:  " <<  hololens_right_hand_keypoints.poses[6].position.x
+                  //     << ", y: " << hololens_right_hand_keypoints.poses[6].position.y << ", z:" << hololens_right_hand_keypoints.poses[6].position.z);
 
 
-                      if (show_hand_inRviz)
-                      {
-                          int j =0;
-                          visualization_msgs::MarkerArray hand_points;
-
-                          for (auto keypoint: hololens_right_hand_keypoints.poses){
-                            visualization_msgs::Marker point;
-                            point.ns = std::to_string(j);
-                            point.header.frame_id = "/base_footprint";
-                            point.type = visualization_msgs::Marker::SPHERE;
-                            point.action = visualization_msgs::Marker::ADD;
-                            point.color.g = 1.0f;
-                            point.color.a = 1.0;
-                            point.pose.orientation.w = 1.0;
-                            point.scale.x = 0.01;
-                            point.scale.y = 0.01;
-                            point.scale.z = 0.01;
-                            point.pose.position.x = keypoint.position.x;
-                            point.pose.position.y = keypoint.position.y;
-                            point.pose.position.z = keypoint.position.z;
-                            hand_points.markers.push_back(point);
-                            j++;
-                         }
-                        marker_pub.publish(hand_points);
-                    }
+                    //   if (show_hand_inRviz)
+                    //   {
+                    //       int j =0;
+                    //       visualization_msgs::MarkerArray hand_points;
+                    //
+                    //       for (auto keypoint: hololens_right_hand_keypoints.poses){
+                    //         visualization_msgs::Marker point;
+                    //         point.ns = std::to_string(j);
+                    //         point.header.frame_id = "base_footprint";
+                    //         point.type = visualization_msgs::Marker::SPHERE;
+                    //         point.action = visualization_msgs::Marker::ADD;
+                    //         point.color.g = 1.0f;
+                    //         point.color.a = 1.0;
+                    //         point.pose.orientation.w = 1.0;
+                    //         point.scale.x = 0.01;
+                    //         point.scale.y = 0.01;
+                    //         point.scale.z = 0.01;
+                    //         point.pose.position.x = -keypoint.position.x;
+                    //         point.pose.position.y = keypoint.position.y;
+                    //         point.pose.position.z = keypoint.position.z;
+                    //         hand_points.markers.push_back(point);
+                    //         j++;
+                    //      }
+                    //     marker_pub.publish(hand_points);
+                    // }
             }));
 
 
@@ -151,7 +162,6 @@ int main(int argc, char **argv) {
     while (true) {
        ROS_INFO_STREAM("moving to start pose");
        move_group.setStartStateToCurrentState();
-       // V(move_group.setJointValueTarget(goal_state));
        V(move_group.setJointValueTarget(start_joints));
        auto success = move_group.move();
 
@@ -198,7 +208,7 @@ int main(int argc, char **argv) {
         tf2::Stamped <tf2::Transform> wrist_link_tfstamped;
         geometry_msgs::TransformStamped tfGeom;
         try {
-            tfGeom = tfBuffer.lookupTransform("rh_wrist", MapPositionlinks[j],
+            tfGeom = tfBuffer.lookupTransform(base_frame, MapPositionlinks[j],
                                               ros::Time(0), ros::Duration(5.0));
         }
         catch (tf2::TransformException &ex) {
@@ -267,24 +277,27 @@ int main(int argc, char **argv) {
           for (int j = 0; j < MapPositionlinks.size(); j++) {
               ik_options.goals.emplace_back(
                       new bio_ik::PositionGoal(MapPositionlinks[j], toTF(goal_position[j]), MapPositionweights[j]));
-              // if (show_hand_inRviz)
-              // {
-              //     visualization_msgs::Marker point;
-              //     point.ns = std::to_string(j);
-              //     point.header.frame_id = "/world";
-              //     point.type = visualization_msgs::Marker::SPHERE;
-              //     point.action = visualization_msgs::Marker::ADD;
-              //     point.color.g = 1.0f;
-              //     point.color.a = 1.0;
-              //     point.pose.orientation.w = 1.0;
-              //     point.scale.x = 0.01;
-              //     point.scale.y = 0.01;
-              //     point.scale.z = 0.01;
-              //     point.pose.position.x = goal_position[j].x();
-              //     point.pose.position.y = goal_position[j].y();
-              //     point.pose.position.z = goal_position[j].z();
-              //     hand_points.markers.push_back(point);
-              // }
+
+              visualization_msgs::MarkerArray hand_points;
+              if (show_hand_inRviz)
+              {
+                  visualization_msgs::Marker point;
+                  point.ns = std::to_string(j);
+                  point.header.frame_id = "base_footprint";
+                  point.type = visualization_msgs::Marker::SPHERE;
+                  point.action = visualization_msgs::Marker::ADD;
+                  point.color.g = 1.0f;
+                  point.color.a = 1.0;
+                  point.pose.orientation.w = 1.0;
+                  point.scale.x = 0.01;
+                  point.scale.y = 0.01;
+                  point.scale.z = 0.01;
+                  point.pose.position.x = goal_position[j].x();
+                  point.pose.position.y = goal_position[j].y();
+                  point.pose.position.z = goal_position[j].z();
+                  hand_points.markers.push_back(point);
+              }
+              marker_pub.publish(hand_points);
           }
 
           // set ik solver
@@ -306,8 +319,7 @@ int main(int argc, char **argv) {
                               }
                               return !collision;
                           }),
-                  ik_options
-          );
+                  ik_options);
 
             // Exit if IK failed
             if (!found_ik) {
@@ -398,35 +410,50 @@ int main(int argc, char **argv) {
             //human_target_keypoints[0] = toVector3d(hololens_right_hand_keypoints.poses[1].position);
 
             // thumb tip, proxiaml, metarcapal
-            ROS_WARN_STREAM("hololens_right_hand_keypoints.poses[6].position: x:  " <<  hololens_right_hand_keypoints.poses[6].position.x
-            << ", y: " << hololens_right_hand_keypoints.poses[6].position.y << ", z:" << hololens_right_hand_keypoints.poses[6].position.z);
-
             human_target_keypoints[0] = toVector3d(hololens_right_hand_keypoints.poses[6].position);
-            std::cout << __LINE__ << std::endl;
-            ROS_WARN_STREAM("hololens_right_hand_keypoints.poses[6].position: x:  " <<  hololens_right_hand_keypoints.poses[6].position.x
-            << ", y: " << hololens_right_hand_keypoints.poses[6].position.y << ", z:" << hololens_right_hand_keypoints.poses[6].position.z);
-
             human_target_keypoints[1] = toVector3d(hololens_right_hand_keypoints.poses[11].position);
-            std::cout << __LINE__ << std::endl;
-
             human_target_keypoints[2] = toVector3d(hololens_right_hand_keypoints.poses[16].position);
             human_target_keypoints[3] = toVector3d(hololens_right_hand_keypoints.poses[21].position);
-            std::cout << __LINE__ << std::endl;
 
             // middle link
             human_target_keypoints[4] = toVector3d(hololens_right_hand_keypoints.poses[4].position);
             human_target_keypoints[5] = toVector3d(hololens_right_hand_keypoints.poses[9].position);
             human_target_keypoints[6] = toVector3d(hololens_right_hand_keypoints.poses[14].position);
             human_target_keypoints[7] = toVector3d(hololens_right_hand_keypoints.poses[19].position);
-            std::cout << __LINE__ << std::endl;
 
             // metarcapal
             //human_target_keypoints[9] = toVector3d(hololens_right_hand_keypoints.poses[3].position);
             //human_target_keypoints[10] = toVector3d(hololens_right_hand_keypoints.poses[7].position);
             //human_target_keypoints[11] = toVector3d(hololens_right_hand_keypoints.poses[12].position);
             //human_target_keypoints[12] = toVector3d(hololens_right_hand_keypoints.poses[17].position);
+
+              if (show_hand_inRviz)
+              {
+                  int j =0;
+                  visualization_msgs::MarkerArray hand_points;
+
+                  for (auto keypoint: human_target_keypoints){
+                    visualization_msgs::Marker point;
+                    point.ns = std::to_string(j);
+                    point.header.frame_id = "base_footprint";
+                    point.type = visualization_msgs::Marker::SPHERE;
+                    point.action = visualization_msgs::Marker::ADD;
+                    point.color.r = 1.0f;
+                    point.color.a = 1.0;
+                    point.pose.orientation.w = 1.0;
+                    point.scale.x = 0.01;
+                    point.scale.y = 0.01;
+                    point.scale.z = 0.01;
+                    point.pose.position.x = keypoint.x();
+                    point.pose.position.y = keypoint.y();
+                    point.pose.position.z = keypoint.z();
+                    hand_points.markers.push_back(point);
+                    j++;
+                 }
+                marker_pub2.publish(hand_points);
+            }
+
         }
-        std::cout << __LINE__ << std::endl;
 
         if ((enable_PR2==teleop_start && (previous_enable==teleop_stop)) || enable_PR2==0 || iteration==0)
         {
@@ -435,7 +462,7 @@ int main(int argc, char **argv) {
                  tf2::Stamped <tf2::Transform> wrist_link_tfstamped;
                  geometry_msgs::TransformStamped tfGeom;
                  try {
-                     tfGeom = tfBuffer.lookupTransform("rh_wrist", MapPositionlinks[j],
+                     tfGeom = tfBuffer.lookupTransform(base_frame, MapPositionlinks[j],
                                                        ros::Time(0), ros::Duration(5.0));
                  }
                  catch (tf2::TransformException &ex) {
@@ -444,12 +471,10 @@ int main(int argc, char **argv) {
                  }
                  start_real_keypoints[j] = tf2::transformToEigen(tfGeom).translation();
              }
-             std::cout << __LINE__ << std::endl;
 
              previous_human_target_keypoints = human_target_keypoints;
              start_human_target_keypoints = human_target_keypoints;
         }
-std::cout << __LINE__ << std::endl;
         // velocity constraints
         if (enable_PR2!=teleop_stop)
         {
@@ -459,13 +484,23 @@ std::cout << __LINE__ << std::endl;
                     ROS_WARN_STREAM("Joint vel is " <<  cartersion_velocity.norm() << ". TOO BIG");
                     cartersion_velocity = cartersion_velocity.normalized() * max_cartersion_velocity;
                 }
+
                 human_target_keypoints[j] = previous_human_target_keypoints[j] + cartersion_velocity * (1.0 / frequency);
                 previous_human_target_keypoints[j] = human_target_keypoints[j];
-
                 goal_position[j] = start_real_keypoints[j] + (human_target_keypoints[j] - start_human_target_keypoints[j]);
+
+                // if (j==3)
+                // {
+                //   printVector("human_target_keypoints", human_target_keypoints[j]);
+                //   printVector("previous_human_target_keypoints", previous_human_target_keypoints[j]);
+                //   printVector("new human_target_keypoints", human_target_keypoints[j]);
+                //   printVector("start_real_keypoints", start_real_keypoints[j]);
+                //   printVector("start_human_target_keypoints", start_human_target_keypoints[j]);
+                //   printVector("goal_position", goal_position[j]);
+                // }
             }
         }
-        std::cout << __LINE__ << std::endl;
+
        previous_enable = enable_PR2;
     }
     return 0;
