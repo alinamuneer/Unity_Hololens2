@@ -1,8 +1,9 @@
 <launch>
   <arg name="publish_pos" default="false"/>
   <arg name="publish_wrist" default="true"/>
-  <arg name="left_arm" default="true"/>
-  <arg name="right_arm" default="false"/>
+  <arg name="left_arm" default="false"/>
+  <arg name="right_arm" default="true"/>
+  <arg name="shadow_hand" default="false"/>
 
   <group if="$(arg right_arm)">
    <node name="pr2_right_arm_control"  pkg="unity_pr2_beginner" type="pr2_arms_control" output="screen">
@@ -19,5 +20,13 @@
         <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_left_arm_jog.yaml"/>
       </node>
     </group>
+
+    <group if="$(arg shadow_hand)">
+    <node name="pr2_shadow_hand_contol"  pkg="unity_pr2_beginner" type="pr2_shadow_hand_contol" output="screen">
+         <param name="publish_pos" value="$(arg publish_pos)"/>
+         <param name="show_hand_inRviz" value="true"/>
+         <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_shadow_hand.yaml"/>
+    </node>
+  </group>
 
 </launch>
