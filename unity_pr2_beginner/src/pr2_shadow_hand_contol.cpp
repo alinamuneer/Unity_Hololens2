@@ -37,7 +37,7 @@ tf2::Vector3 toTF(const Eigen::Vector3d &v) {
 
 // Converts geometry_msgs/Point to Eigen vector
 Eigen::Vector3d toVector3d(const geometry_msgs::Point &v) {
-    return Eigen::Vector3d(-v.x, v.y, v.z);
+    return Eigen::Vector3d(v.x, v.y, v.z);
 }
 
 void printVector( std::string prefix, Eigen::Vector3d vector ) {
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     std::mutex hololens_right_hand_keypoints_mutex;
     geometry_msgs::PoseArray hololens_right_hand_keypoints;
     // without this initialization, when there is no data coming at begining, the code will die directly
-    hololens_right_hand_keypoints.poses.emplace_back();
+    // hololens_right_hand_keypoints.poses.emplace_back();
 
     ros::Subscriber
     sub_hand_keypoints = nh.subscribe<geometry_msgs::PoseArray>(
@@ -186,7 +186,8 @@ int main(int argc, char **argv) {
         "rh_thmiddle",
         "rh_ffmiddle",
         "rh_mfmiddle",
-        "rh_rfmiddle"};
+        "rh_rfmiddle"
+      };
     std::vector <std::string> MapDirectionlinks{
         "rh_thproximal",
         "rh_ffproximal",
@@ -196,10 +197,10 @@ int main(int argc, char **argv) {
     std::vector<float> MapPositionweights{1, 1, 1, 1, 0.2, 0.2, 0.2, 0.2};
     std::vector<float> MapDirectionweights{0.1, 0.1, 0.1, 0.1, 0.1};
 
-    std::vector<Eigen::Vector3d> start_real_keypoints(8, Eigen::Vector3d::Zero());
-    std::vector<Eigen::Vector3d> previous_human_target_keypoints(8,Eigen::Vector3d::Zero());
-    std::vector<Eigen::Vector3d> start_human_target_keypoints(8, Eigen::Vector3d::Zero());
-    std::vector<Eigen::Vector3d> goal_position(8,Eigen::Vector3d::Zero());
+    std::vector<Eigen::Vector3d> start_real_keypoints(MapPositionlinks.size(), Eigen::Vector3d::Zero());
+    std::vector<Eigen::Vector3d> previous_human_target_keypoints(MapPositionlinks.size(),Eigen::Vector3d::Zero());
+    std::vector<Eigen::Vector3d> start_human_target_keypoints(MapPositionlinks.size(), Eigen::Vector3d::Zero());
+    std::vector<Eigen::Vector3d> goal_position(MapPositionlinks.size(),Eigen::Vector3d::Zero());
 
     // get the transform between rh_wrist (csv data are based in rh_wrist) and world
     tf2_ros::Buffer tfBuffer;
@@ -222,13 +223,14 @@ int main(int argc, char **argv) {
     //get the transfromation from wrist to base, because the base frame of the joint_model_group is base_footprint
     geometry_msgs::TransformStamped base_wrist_msg;
     try {
-      base_wrist_msg = tfBuffer.lookupTransform(base_frame, "rh_wrist",
+      base_wrist_msg = tfBuffer.lookupTransform(base_frame, "rh_palm",
                                         ros::Time(0), ros::Duration(5.0));
     }
     catch (tf2::TransformException &ex) {
         ROS_WARN("%s", ex.what());
         return -1;
     }
+    Eigen::Vector3d base_wrist_position = tf2::transformToEigen(base_wrist_msg).translation();
     Eigen::Affine3d base_wrist_tf = tf2::transformToEigen(base_wrist_msg);
 
     // Run at a fixed control rate
@@ -266,7 +268,7 @@ int main(int argc, char **argv) {
           enable_PR2 = PR2_enable_msg;
         }
 
-        if (enable_PR2!=teleop_stop)
+        if (enable_PR2!=teleop_stop && enable_PR2!=0)
         // ik calculation
         {
           bio_ik::BioIKKinematicsQueryOptions ik_options;
@@ -402,24 +404,29 @@ int main(int argc, char **argv) {
         // Apply cartesian workspace and velocity, acceleration constraints
         Eigen::Vector3d p = Eigen::Vector3d::Zero();
         Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
-        std::vector<Eigen::Vector3d> human_target_keypoints(8,Eigen::Vector3d::Zero());
+        std::vector<Eigen::Vector3d> human_target_keypoints(MapPositionlinks.size(),Eigen::Vector3d::Zero());
 
         {
+            // if the hand is not detected, the poses size of hololens_right_hand_keypoints is zero, so should skip
+            if (hololens_right_hand_keypoints.poses.size() == 0){
+                continue;
+              }
+
             std::lock_guard <std::mutex> lock_tag(hololens_right_hand_keypoints_mutex);
             // wrist
-            //human_target_keypoints[0] = toVector3d(hololens_right_hand_keypoints.poses[1].position);
+            Eigen::Vector3d human_wrist_keypoint = toVector3d(hololens_right_hand_keypoints.poses[1].position);
 
             // tip
-            human_target_keypoints[0] = toVector3d(hololens_right_hand_keypoints.poses[6].position);
-            human_target_keypoints[1] = toVector3d(hololens_right_hand_keypoints.poses[11].position);
-            human_target_keypoints[2] = toVector3d(hololens_right_hand_keypoints.poses[16].position);
-            human_target_keypoints[3] = toVector3d(hololens_right_hand_keypoints.poses[21].position);
+            human_target_keypoints[0] = toVector3d(hololens_right_hand_keypoints.poses[6].position) - human_wrist_keypoint;
+            human_target_keypoints[1] = toVector3d(hololens_right_hand_keypoints.poses[11].position) - human_wrist_keypoint;
+            human_target_keypoints[2] = toVector3d(hololens_right_hand_keypoints.poses[16].position) - human_wrist_keypoint;
+            human_target_keypoints[3] = toVector3d(hololens_right_hand_keypoints.poses[21].position) - human_wrist_keypoint;
 
             // middle link
-            human_target_keypoints[4] = toVector3d(hololens_right_hand_keypoints.poses[4].position);
-            human_target_keypoints[5] = toVector3d(hololens_right_hand_keypoints.poses[9].position);
-            human_target_keypoints[6] = toVector3d(hololens_right_hand_keypoints.poses[14].position);
-            human_target_keypoints[7] = toVector3d(hololens_right_hand_keypoints.poses[19].position);
+            human_target_keypoints[4] = toVector3d(hololens_right_hand_keypoints.poses[4].position) - human_wrist_keypoint;
+            human_target_keypoints[5] = toVector3d(hololens_right_hand_keypoints.poses[9].position) - human_wrist_keypoint;
+            human_target_keypoints[6] = toVector3d(hololens_right_hand_keypoints.poses[14].position) - human_wrist_keypoint;
+            human_target_keypoints[7] = toVector3d(hololens_right_hand_keypoints.poses[19].position) - human_wrist_keypoint;
 
             // metarcapal
             //human_target_keypoints[9] = toVector3d(hololens_right_hand_keypoints.poses[3].position);
@@ -444,9 +451,9 @@ int main(int argc, char **argv) {
                     point.scale.x = 0.01;
                     point.scale.y = 0.01;
                     point.scale.z = 0.01;
-                    point.pose.position.x = keypoint.x();
-                    point.pose.position.y = keypoint.y();
-                    point.pose.position.z = keypoint.z();
+                    point.pose.position.x = base_wrist_position.x() + keypoint.x();
+                    point.pose.position.y = base_wrist_position.y() + keypoint.y();
+                    point.pose.position.z = base_wrist_position.z() + keypoint.z();
                     hand_points.markers.push_back(point);
                     j++;
                  }
@@ -454,7 +461,7 @@ int main(int argc, char **argv) {
             }
         }
 
-        if ((enable_PR2==teleop_start && (previous_enable==teleop_stop)) || enable_PR2==0 || iteration==0)
+        if ((enable_PR2==teleop_start && (previous_enable==teleop_stop || previous_enable==0)) || enable_PR2==0 || iteration==0)
         {
              geometry_msgs::TransformStamped base_palm_tf;
              for (int j=0; j< start_real_keypoints.size(); j++){
@@ -474,33 +481,31 @@ int main(int argc, char **argv) {
              previous_human_target_keypoints = human_target_keypoints;
              start_human_target_keypoints = human_target_keypoints;
         }
+
         // velocity constraints
-        if (enable_PR2!=teleop_stop)
         {
             for (int j=0; j < human_target_keypoints.size(); j++) {
-              ROS_ERROR_STREAM("SIZE is " <<  human_target_keypoints.size());
-                Eigen::Vector3d cartersion_velocity = (human_target_keypoints[j] - previous_human_target_keypoints[j]) *  frequency;
+                //Eigen::Vector3d cartersion_velocity = (human_target_keypoints[j] - previous_human_target_keypoints[j]) *  frequency;
 
-                if (cartersion_velocity.norm() > max_cartersion_velocity) {
-                    ROS_WARN_STREAM("Joint vel is " <<  cartersion_velocity.norm() << ". TOO BIG");
-                    cartersion_velocity = cartersion_velocity.normalized() * max_cartersion_velocity;
-                }
+                // if (cartersion_velocity.norm() > max_cartersion_velocity) {
+                //     ROS_WARN_STREAM("Joint vel is " <<  cartersion_velocity.norm() << ". TOO BIG");
+                //     cartersion_velocity = cartersion_velocity.normalized() * max_cartersion_velocity;
+                // }
+                //
+                //
+                // human_target_keypoints[j] = previous_human_target_keypoints[j] + cartersion_velocity * (1.0 / frequency);
 
-                  if (j==3)
-                  {
-                    printVector("human_target_keypoints", human_target_keypoints[j]);
-                    printVector("previous_human_target_keypoints", previous_human_target_keypoints[j]);
-                    printVector("cartersion_velocity", cartersion_velocity);
-                  }
-
-                human_target_keypoints[j] = previous_human_target_keypoints[j] + cartersion_velocity * (1.0 / frequency);
-
-
-
-
-                previous_human_target_keypoints[j] = human_target_keypoints[j];
+                // goal_position[j] = base_wrist_position + human_target_keypoints[j];
                 goal_position[j] = start_real_keypoints[j] + (human_target_keypoints[j] - start_human_target_keypoints[j]);
+                previous_human_target_keypoints[j] = human_target_keypoints[j];
 
+                if (j==3)
+                {
+                  printVector("human_target_keypoints", human_target_keypoints[j]);
+                  printVector("start_human_target_keypoints", start_human_target_keypoints[j]);
+                  printVector("start_real_keypoints", start_real_keypoints[j]);
+                  printVector("goal_position", goal_position[j]);
+                }
             }
         }
 
