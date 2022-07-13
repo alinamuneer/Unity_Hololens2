@@ -310,7 +310,9 @@ int main(int argc, char **argv) {
 
     // Control loop
     for (size_t iteration = 0;; iteration++) {
-        ros::Time begin = ros::Time::now();
+        // ros::Time begin = ros::Time::now();
+        geometry_msgs::PoseArray pose_goal;
+        pose_goal.header.frame_id = "base_footprint";
 
         int enable_PR2=0;
         {
@@ -522,8 +524,6 @@ int main(int argc, char **argv) {
        }
 
         if (enable_PR2!=teleop_stop){
-          geometry_msgs::PoseArray pose_goal;
-          pose_goal.header.frame_id = "base_footprint";
           geometry_msgs::TransformStamped base_palm_tf;
 
           try {
@@ -548,21 +548,25 @@ int main(int argc, char **argv) {
         Eigen::Vector3d p = Eigen::Vector3d::Zero();
         Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
         {
+            // if the hand is not detected, the norm of hololens_wrist_unity_pos is zero, so should skip
+            if (hololens_wrist_unity_pos.norm() == 0){
+                continue;
+              }
+
             std::lock_guard <std::mutex> lock_tag(hand_transform_mutex);
             Eigen::Affine3d hololens_right_wrist = Eigen::Affine3d::Identity();
             hololens_right_wrist.translation() = hololens_wrist_unity_pos;
             hololens_right_wrist.linear() = hololens_wrist_unity_rot.toRotationMatrix();
 
             Eigen::Affine3d pr2base_palm =  pr2base_hololenscamera * hololens_right_wrist;
-            // std::cout << pr2base_palm.matrix() << std::endl;
 
             p = pr2base_palm.translation();
+            printVector("hololens_wrist_unity_pos", p);
             m = pr2base_palm.linear();
         }
 
-    // Eigen::Affine3d pr2base_urworld  = Eigen::Affine3d(Eigen::Quaterniond(0.7071068, 0.0, 0.0, -0.7071068));
         // initialize previous goal position when restart the teleoperation
-        if ((enable_PR2==teleop_start && (previous_enable==teleop_stop)) || enable_PR2==0 || iteration==0){
+        if ((enable_PR2==teleop_start && (previous_enable==teleop_stop || previous_enable==0)) || enable_PR2==0 || iteration==0){
              geometry_msgs::TransformStamped base_palm_tf;
             try {
                 base_palm_tf = tfBuffer.lookupTransform("base_footprint", eef_link,
@@ -582,11 +586,17 @@ int main(int argc, char **argv) {
 
            start_p = p;
            start_m = m;
+
+           printVector("start_wrist_pose", start_pose_affine.translation());
+           printVector("start_p", start_p);
         }
 
         // linear constraints
-        if (enable_PR2!=teleop_stop){
+        if (enable_PR2!=teleop_stop || enable_PR2!=0){
         {
+          printVector("previous_goal_position", previous_goal_position);
+          printVector("previous_position_velocity", previous_position_velocity);
+
              position_velocity = (p - previous_goal_position) *  frequency;
              if (position_velocity.norm() > max_position_velocity) {
                  ROS_WARN_STREAM("Linear vel is " <<  position_velocity.norm() << ". TOO BIG");
@@ -599,9 +609,8 @@ int main(int argc, char **argv) {
              }
 
              position_velocity = previous_position_velocity + acceleration * (1.0 / frequency);
-//            p.x() = previous_goal_position.x() + position_velocity.x() * (1.0 / frequency) * 0.3;
-//            p.y() = previous_goal_position.y() + position_velocity.y() * (1.0 / frequency) * 0.3;
-//            p.z() = previous_goal_position.z() + position_velocity.z() * (1.0 / frequency);
+             printVector("position_velocity", position_velocity);
+             printVector("acceleration", acceleration);
              p = previous_goal_position + position_velocity * (1.0 / frequency);
         }
 
@@ -624,7 +633,7 @@ int main(int argc, char **argv) {
         goal_rotation_q = qf_goal.normalized();
         goal_position = start_pose_affine.translation() + (p - start_p);
 
-        geometry_msgs::PoseArray pose_goal;
+        printVector("goal_position", goal_position);
 
         pose_goal.poses.emplace_back();
         pose_goal.poses.back().position.x = goal_position.x();
@@ -639,8 +648,10 @@ int main(int argc, char **argv) {
         previous_goal_position = p;
         previous_position_velocity = position_velocity;
         previous_goal_rotation_matrix = m;
+
+        // if there is no real wrist inputs and when do not enable teleop, do not update previous enable
+        previous_enable = enable_PR2;
        }
-       previous_enable = enable_PR2;
        // ROS_INFO_STREAM("goal cal time: " <<  "\n" << ros::Time::now() - begin);
     }
     return 0;

@@ -373,7 +373,7 @@ int main(int argc, char **argv) {
             // if the hand is not detected, the poses size of hololens_right_hand_keypoints is zero, so should skip
             if (hololens_right_hand_keypoints.poses.size() == 0){
                 continue;
-              }
+            }
 
             std::lock_guard <std::mutex> lock_tag(hololens_right_hand_keypoints_mutex);
             // wrist
