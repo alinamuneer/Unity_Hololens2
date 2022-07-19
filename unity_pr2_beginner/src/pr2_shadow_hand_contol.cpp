@@ -223,7 +223,8 @@ int main(int argc, char **argv) {
     boost::function < void(const std_msgs::Int8 &)>(
               [&](const std_msgs::Int8 &enableTeleopMsg) {
                   std::lock_guard <std::mutex> lock(enable_mutex);
-                  PR2_enable_msg = enableTeleopMsg.data;
+                  if (enableTeleopMsg.data==0 || enableTeleopMsg.data==2 || enableTeleopMsg.data==4)
+                      PR2_enable_msg = enableTeleopMsg.data;
               }));
 
     // Control loop

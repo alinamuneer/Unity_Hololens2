@@ -7,7 +7,7 @@ max_position_velocity: 0.5
 max_rotation_velocity: 3.0
 
 # Control frequency
-arm_frequency: 30
+arm_frequency: 20
 
 # left arm velocity factor
 feedback_velocity_factor: 0.1
