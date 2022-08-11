@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============================   Upper Arm   ============================ -->
+
+
+  <xacro:macro name="pr2_elbow_flex_transmission_v0" params="side">
+    <!-- Elbow flex -->
+    <transmission name="${side}_elbow_flex_trans">
+      <type>pr2_mechanism_model/SimpleTransmission</type>
+      <actuator name="${side}_elbow_flex_motor">
+        <mechanicalReduction>${-13/3 * 127.532/15.28}</mechanicalReduction>
+      </actuator>
+      <joint name="${side}_elbow_flex_joint">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+    </transmission>
+  </xacro:macro>
+
+  <!-- Forearm roll -->
+  <xacro:macro name="pr2_forearm_roll_transmission_v0" params="side" >
+    <transmission name="${side}_forearm_roll_trans">
+      <type>pr2_mechanism_model/SimpleTransmission</type>
+      <actuator name="${side}_forearm_roll_motor">
+        <mechanicalReduction>${-576/25 * 55/14}</mechanicalReduction>
+      </actuator>
+      <joint name="${side}_forearm_roll_joint">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+    </transmission>
+  </xacro:macro>
+  
+</robot>
