@@ -1,16 +1,32 @@
 <launch>
   <arg name="publish_pos" default="false"/>
   <arg name="publish_wrist" default="true"/>
+  <arg name="left_arm" default="true"/>
+  <arg name="right_arm" default="true"/>
+  <arg name="shadow_hand" default="false"/>
 
- <node name="pr2_right_arm_control"  pkg="unity_pr2_beginner" type="pr2_arms_control" output="screen">
-      <param name="publish_pos" value="$(arg publish_pos)"/>
-      <param name="publish_wrist" value="$(arg publish_pos)" />
-      <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_right_arm_jog.yaml"/>
- </node>
+  <group if="$(arg right_arm)">
+   <node name="pr2_right_arm_control"  pkg="unity_pr2_beginner" type="pr2_arms_control" output="screen">
+        <param name="publish_pos" value="$(arg publish_pos)"/>
+        <param name="publish_wrist" value="$(arg publish_wrist)" />
+        <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_right_arm_jog.yaml"/>
+   </node>
+  </group>
 
-   <node name="pr2_left_arm_control"  pkg="unity_pr2_beginner" type="pr2_arms_control" output="screen">
-      <param name="publish_pos" value="$(arg publish_pos)"/>
-      <param name="publish_wrist" type="bool" value="false" />
-      <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_left_arm_jog.yaml"/>
+  <group if="$(arg left_arm)">
+     <node name="pr2_left_arm_control"  pkg="unity_pr2_beginner" type="pr2_arms_control" output="screen">
+        <param name="publish_pos" value="$(arg publish_pos)"/>
+        <param name="publish_wrist" type="bool" value="false" />
+        <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_left_arm_jog.yaml"/>
+      </node>
+    </group>
+
+    <group if="$(arg shadow_hand)">
+    <node name="pr2_shadow_hand_contol"  pkg="unity_pr2_beginner" type="pr2_shadow_hand_contol" output="screen">
+         <param name="publish_pos" value="$(arg publish_pos)"/>
+         <param name="show_hand_inRviz" value="true"/>
+         <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_shadow_hand.yaml"/>
     </node>
+  </group>
+
 </launch>

@@ -7,14 +7,14 @@ max_position_velocity: 0.5
 max_rotation_velocity: 3.0
 
 # Control frequency
-arm_frequency: 30
+arm_frequency: 20
 
 # left arm velocity factor
 feedback_velocity_factor: 0.1
 feedforward_velocity_factor: 1
 
 start_rotation_q:
-   x: 0.074 
+   x: 0.074
    y: -0.08994921671655626
    z: -0.1739528986195165
    w: 0.9778568379567009
@@ -44,3 +44,5 @@ teleop_signal:
 arm_controller_name: l_arm_controller
 
 goal_topic: /left/goal_transform_stamp
+
+display_trajectory_name: left_display_goal_path
