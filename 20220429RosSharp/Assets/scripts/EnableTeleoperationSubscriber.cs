@@ -23,7 +23,8 @@ namespace RosSharp.RosBridgeClient
                     GameObject.Find("RosConnector").GetComponent<PR2LeftArmTeleop>().StopTeleop();
                     GameObject.Find("RosConnector").GetComponent<PR2RightArmTeleop>().StopTeleop();
                     GameObject.Find("RosConnector").GetComponent<PR2GripperTeleop>().StopTeleop();
-                    GameObject.Find("RosConnector").GetComponent<RightHandTeleop>().StopTeleop();
+                    // GameObject.Find("RosConnector").GetComponent<RightHandTeleop>().StopTeleop();
+                    GameObject.Find("RosConnector").GetComponent<SHParallelGraspTeleop>().StopTeleop();
                 }
                 else if (message.data == 1)
                 {
@@ -33,7 +34,8 @@ namespace RosSharp.RosBridgeClient
                 else if (message.data == 2)
                 {
                     GameObject.Find("RosConnector").GetComponent<PR2RightArmTeleop>().StartTeleop();
-                    GameObject.Find("RosConnector").GetComponent<RightHandTeleop>().StartTeleop();
+                    // GameObject.Find("RosConnector").GetComponent<RightHandTeleop>().StartTeleop();
+                    GameObject.Find("RosConnector").GetComponent<SHParallelGraspTeleop>().StartTeleop();
                 }
                 else if (message.data == 3)
                 {
@@ -43,7 +45,8 @@ namespace RosSharp.RosBridgeClient
                 else if (message.data == 4)
                 {
                     GameObject.Find("RosConnector").GetComponent<PR2RightArmTeleop>().StopTeleop();
-                    GameObject.Find("RosConnector").GetComponent<RightHandTeleop>().StopTeleop();
+                    //GameObject.Find("RosConnector").GetComponent<RightHandTeleop>().StopTeleop();
+                    GameObject.Find("RosConnector").GetComponent<SHParallelGraspTeleop>().StopTeleop();
                 }
             }
         }
