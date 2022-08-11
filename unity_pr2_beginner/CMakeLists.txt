@@ -45,3 +45,6 @@ target_link_libraries(pr2_left_gripper_control ${catkin_LIBRARIES})
 add_executable(pr2_shadow_hand_contol src/pr2_shadow_hand_contol.cpp)
 add_dependencies(pr2_shadow_hand_contol ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pr2_shadow_hand_contol ${catkin_LIBRARIES})
+
+add_executable(sr_parallel_grasp_controller src/sr_parallel_grasp_controller.cpp)
+target_link_libraries(sr_parallel_grasp_controller ${catkin_LIBRARIES})
