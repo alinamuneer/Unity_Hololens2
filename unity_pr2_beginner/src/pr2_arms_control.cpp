@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
     auto arm_trajectory_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/" +
               arm_controller_name + "/command", 1);
     auto r_wrist_pub = nh.advertise<trajectory_msgs::JointTrajectory>(
-        "/hand/rh_trajectory_controller/command", 1, true);
+        "/hand/rh_wr_trajectory_controller/command", 1, true);
 
     std::string display_trajectory_name;
     V(pnh.getParam("display_trajectory_name", display_trajectory_name));

@@ -4,6 +4,7 @@
   <arg name="left_arm" default="true"/>
   <arg name="right_arm" default="true"/>
   <arg name="shadow_hand" default="false"/>
+  <arg name="left_gripper" default="false"/>
 
   <group if="$(arg right_arm)">
    <node name="pr2_right_arm_control"  pkg="unity_pr2_beginner" type="pr2_arms_control" output="screen">
@@ -19,14 +20,20 @@
         <param name="publish_wrist" type="bool" value="false" />
         <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_left_arm_jog.yaml"/>
       </node>
+
     </group>
 
-    <group if="$(arg shadow_hand)">
-    <node name="pr2_shadow_hand_contol"  pkg="unity_pr2_beginner" type="pr2_shadow_hand_contol" output="screen">
+    <group if="$(arg left_gripper)">
+      <node name="pr2_left_gripper_control" pkg="unity_pr2_beginner" type="pr2_left_gripper_control" output="screen"/>
+  </group>
+
+  <group if="$(arg shadow_hand)">
+    <!-- <node name="pr2_shadow_hand_contol"  pkg="unity_pr2_beginner" type="pr2_shadow_hand_contol" output="screen">
          <param name="publish_pos" value="$(arg publish_pos)"/>
          <param name="show_hand_inRviz" value="true"/>
          <rosparam command="load" file="$(find unity_pr2_beginner)/config/pr2_shadow_hand.yaml"/>
-    </node>
+    </node> -->
+    <node ns="hand" name="sr_parallel_grasp_controller" pkg="tams_unity_utils" type="sr_parallel_grasp_controller" output="screen" />
   </group>
 
 </launch>
