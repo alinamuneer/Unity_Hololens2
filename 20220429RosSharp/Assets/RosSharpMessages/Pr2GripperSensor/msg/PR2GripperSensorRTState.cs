@@ -13,7 +13,8 @@ namespace RosSharp.RosBridgeClient.MessageTypes.Pr2GripperSensor
 {
     public class PR2GripperSensorRTState : Message
     {
-        public const string RosMessageName = "pr2_gripper_sensor_msgs/PR2GripperSensorRTState";
+        //public const string RosMessageName = "pr2_gripper_sensor_msgs/PR2GripperSensorRTState";
+        public override string RosMessageName => "pr2_gripper_sensor_msgs/PR2GripperSensorRTState";
 
         //  the control state of our realtime controller
         public sbyte realtime_controller_state { get; set; }

@@ -15,7 +15,8 @@ namespace RosSharp.RosBridgeClient.MessageTypes.Pr2GripperSensor
 {
     public class PR2GripperFindContactData : Message
     {
-        public const string RosMessageName = "pr2_gripper_sensor_msgs/PR2GripperFindContactData";
+        // public const string RosMessageName = "pr2_gripper_sensor_msgs/PR2GripperFindContactData";
+        public override string RosMessageName => "pr2_gripper_sensor_msgs/PR2GripperFindContactData";
 
         //  Time the data was recorded at
         public Time stamp { get; set; }
